@@ -14,7 +14,6 @@ namespace Ceres
         private DiscordSocketClient _client;
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         private readonly string _spAuthKey = File.ReadAllText(@"C:\Users\Emmi\Source\GitHub\CeresBot\simplyplural_token");
-        private bool _botRunning = false;
 
         /// <summary>
         /// Workaround for an asynchronus entry point.
@@ -28,8 +27,7 @@ namespace Ceres
         {
             _client = new DiscordSocketClient();
             _client.Ready += () => {
-                _botRunning = true;
-                Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:x8}] Bot is connected!");
+                Print("Bot is connected!");
                 return Task.CompletedTask;
             };
             _client.Disconnected += Client_Disconnected;
@@ -42,9 +40,8 @@ namespace Ceres
         }
 
         #region Fronter status
-        private async Task SetFronterStatusAsync()
+        private async Task<string> SetFronterStatusAsync()
         {
-            if (!_botRunning) return;
             List<string> serializedFronterList = await GetFrontersList();
 
             string statusMessage = serializedFronterList.Count switch
@@ -55,6 +52,7 @@ namespace Ceres
                 _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in response", nameof(serializedFronterList))
             };
             await _client.SetGameAsync(statusMessage);
+            return statusMessage;
         }
 
         private async Task<HttpResponseMessage> GetFrontStatusAsync()
@@ -77,7 +75,7 @@ namespace Ceres
             return ParseMembers(responseSerialized);
         }
 
-        private static List<string> ParseMembers(JArray? responseSerialized)
+        private List<string> ParseMembers(JArray? responseSerialized)
         {
             if (responseSerialized == null) throw new ArgumentNullException(paramName: nameof(responseSerialized), string.Empty);
 
@@ -97,30 +95,43 @@ namespace Ceres
                 serializedFronterList.Add(memberIdNames[fronter["content"].Value<string>("member")]);
             }
 
+            Print("Fronters:");
+            foreach (string fronter in serializedFronterList)
+            {
+                Print(fronter, 11);
+            }
+            Print();
+
             return serializedFronterList;
         }
+        #endregion
+
+        #region Helper methods
+#pragma warning disable CA1822
+        private void Print(string message, int leadingSpaces)
+            => Console.WriteLine($"{new string(' ', leadingSpaces)}{message}");
+
+        private void Print(string message)
+            => Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:00000000}] {message}");
+
+        private void Print()
+            => Console.WriteLine();
+#pragma warning restore
         #endregion
 
         #region Timer methods
         private async void StatusTimer(object? e)
         {
-            await SetFronterStatusAsync();
-            Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:x8}] Ping");
+            Print("Getting front status");
+            string status = await SetFronterStatusAsync();
+            Print($"New status: '{status}'");
         }
         #endregion
 
         #region Bot events
-        private Task Client_Ready()
-        {
-            _botRunning = true;
-            Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:x8}] Bot is connected!");
-            return Task.CompletedTask;
-        }
-
         internal Task Client_Disconnected(Exception arg)
         {
             Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:x8}] {arg.Message}");
-            _botRunning = false;
             return Task.CompletedTask;
         }
         #endregion
