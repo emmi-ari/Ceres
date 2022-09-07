@@ -26,10 +26,14 @@ namespace Ceres
         /// </summary>
         private async Task MainAsync()
         {
-            _client.Ready += Client_Ready;
+            _client = new DiscordSocketClient();
+            _client.Ready += () => {
+                _botRunning = true;
+                Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:x8}] Bot is connected!");
+                return Task.CompletedTask;
+            };
             _client.Disconnected += Client_Disconnected;
             _stopwatch.Start();
-            _client = new DiscordSocketClient();
             await _client.LoginAsync(TokenType.Bot, File.ReadAllText(@"C:\Users\Emmi\Source\GitHub\CeresBot\discord_token"));
             await _client.StartAsync();
 
@@ -113,7 +117,7 @@ namespace Ceres
             return Task.CompletedTask;
         }
 
-        private Task Client_Disconnected(Exception arg)
+        internal Task Client_Disconnected(Exception arg)
         {
             Console.WriteLine($"[{_stopwatch.ElapsedMilliseconds:x8}] {arg.Message}");
             _botRunning = false;
