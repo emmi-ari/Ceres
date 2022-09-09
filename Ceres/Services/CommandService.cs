@@ -1,12 +1,31 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
+
 using Microsoft.Extensions.Configuration;
 
 namespace Ceres.Services
 {
     public class CommandsModule : ModuleBase<SocketCommandContext>
     {
+        [Command("updatefront")]
+        [Alias("update", "ufront", "uf", "updatef")]
+        [Summary("Updates the fronting status")]
+        [RequireOwner(ErrorMessage = "Only runnable by the bot owner")]
+        public Task UpdateFront()
+        {
+            return ReplyAsync("Front status update started");
+        }
+
+        [Command("egg")]
+        [Alias("ei")]
+        [Summary("egg (engl. \"Ei\"")]
+        public Task Egg()
+        {
+            return Context.Channel.SendFileAsync(@"C:\Users\Emmi\Documents\ähm\ei.png");
+        }
+
         [Command("say")]
+        [Alias("echo", "print")]
         [Summary("Echoes a message.")]
         public Task SayAsync([Remainder][Summary("The text to echo")] string echo)
         {
@@ -44,82 +63,44 @@ namespace Ceres.Services
         private readonly CommandService _commands;
         private readonly IConfigurationRoot _config;
         private readonly IServiceProvider _provider;
+        private readonly CommonFronterStatusMethods _fronterStatusMethods;
 
-        // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
         public CommandHandler(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
         {
             _discord = discord;
             _commands = commands;
             _config = config;
             _provider = provider;
-
+            _fronterStatusMethods = new(discord, config);
             _discord.MessageReceived += OnMessageReceivedAsync;
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
         {
             if (s is not SocketUserMessage msg) return;
-            if (msg.Author.Id == _discord.CurrentUser.Id) return;     // Ignore self when checking commands
+            if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
-            SocketCommandContext? context = new(_discord, msg);     // Create the command context
+            SocketCommandContext? context = new(_discord, msg);
 
-            int argPos = 0;     // Check if the message has a valid command prefix
+            int argPos = 0;
             if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
-                var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
+                var result = await _commands.ExecuteAsync(context, argPos, _provider);
+                switch (msg.Content.Trim().Replace("!", string.Empty))
+                {
+                    case "update":
+                    case "updatefront":
+                    case "ufront":
+                    case "updatef":
+                    case "uf":
+                        if (msg.Author.Id.ToString() == _config["botauthor_id"])
+                            await _fronterStatusMethods.SetFronterStatusAsync();
+                        break;
+                }
 
-                if (!result.IsSuccess)     // If not successful, reply with the error.
+                if (!result.IsSuccess)
                     await context.Channel.SendMessageAsync(result.ToString());
             }
         }
-
-        //public class CommandHandler
-        //{
-        //    private readonly DiscordSocketClient _client;
-        //    private readonly CommandService _commands;
-
-        //    // Retrieve client and CommandService instance via ctor
-        //    public CommandHandler(DiscordSocketClient client, CommandService commands)
-        //    {
-        //        _commands = commands;
-        //        _client = client;
-        //    }
-
-        //    public async Task InstallCommandsAsync()
-        //    {
-        //        // Hook the MessageReceived event into our command handler
-        //        _client.MessageReceived += HandleCommandAsync;
-
-        //        // Here we discover all of the command modules in the entry 
-        //        // assembly and load them. Starting from Discord.NET 2.0, a
-        //        // service provider is required to be passed into the
-        //        // module registration method to inject the 
-        //        // required dependencies.
-        //        //
-        //        // If you do not use Dependency Injection, pass null.
-        //        // See Dependency Injection guide for more information.
-        //        await _commands.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: null);
-        //    }
-
-        //    private async Task HandleCommandAsync(SocketMessage messageParam)
-        //    {
-        //        // Don't process the command if it was a system message
-        //        if (messageParam is not SocketUserMessage message) return;
-
-        //        // Create a number to track where the prefix ends and the command begins
-        //        int argPos = 0;
-
-        //        // Determine if the message is a command based on the prefix and make sure no bots trigger commands
-        //        if (!(message.HasStringPrefix("c.", ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot)
-        //            return;
-
-        //        // Create a WebSocket-based command context based on the message
-        //        var context = new SocketCommandContext(_client, message);
-
-        //        // Execute the command with the command context we just
-        //        // created, along with the service provider for precondition checks.
-        //        await _commands.ExecuteAsync(context: context, argPos: argPos, services: null);
-        //    }
-        //}
     }
 }
