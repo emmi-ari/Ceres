@@ -11,7 +11,7 @@ namespace Ceres.Services
         private readonly ConsoleColor _defaultConsoleFGColor = Console.ForegroundColor;
 
         private string LogDirectory { get; }
-        private string LogFile => Path.Combine(LogDirectory, $"{DateTime.UtcNow:yyyy-MM-dd}.txt");
+        //private string LogFile => Path.Combine(LogDirectory, $"{DateTime.UtcNow:yyyy-MM-dd}.txt");
 
         // DiscordSocketClient and CommandService are injected automatically from the IServiceProvider
         public LoggingService(DiscordSocketClient discord, CommandService commands)
@@ -27,13 +27,7 @@ namespace Ceres.Services
 
         private Task OnLogAsync(LogMessage msg)
         {
-            if (!Directory.Exists(LogDirectory))     // Create the log directory if it doesn't exist
-                Directory.CreateDirectory(LogDirectory);
-            if (!File.Exists(LogFile))               // Create today's log file if it doesn't exist
-                File.Create(LogFile).Dispose();
-
             string logText = $"{DateTime.UtcNow:s} [{msg.Severity}] [{msg.Source}]: {msg.Exception?.ToString() ?? msg.Message}";
-            File.AppendAllText(LogFile, logText + "\n");     // Write the log text to a file
 
             switch (msg.Severity)
             {
@@ -49,7 +43,7 @@ namespace Ceres.Services
                 case LogSeverity.Info:
                     Console.ForegroundColor = ConsoleColor.Gray;
                     return Console.Out.WriteLineAsync(logText);
-                    
+
                 case LogSeverity.Debug:
                     Console.ForegroundColor = ConsoleColor.Green;
                     return Console.Out.WriteLineAsync(logText);
@@ -59,6 +53,39 @@ namespace Ceres.Services
                     Console.ForegroundColor = _defaultConsoleFGColor;
                     return Console.Out.WriteLineAsync(logText);
             }
+        }
+
+        private string GetExceptionStringForLog(Exception exception)
+        {
+            if (exception == null)
+                throw new ArgumentNullException(nameof(exception));
+
+            List<string> messages = new()
+            {
+                $"{exception.Message} (0x{exception.HResult:X8})",
+                string.IsNullOrWhiteSpace(exception.StackTrace) ? null : exception.StackTrace + Environment.NewLine
+            };
+
+            if (exception.InnerException != null)
+            {
+                Exception inner = exception.InnerException;
+                while (inner != null)
+                {
+                    messages.Add($"{inner.Message} (0x{inner.HResult:X8})");
+                    messages.Add(inner.StackTrace);
+                    inner = inner.InnerException;
+                }
+            }
+
+            string endErrorMessage = null;
+            foreach (string line in messages)
+            {
+                endErrorMessage += line + Environment.NewLine;
+            }
+
+            endErrorMessage = endErrorMessage.Trim('\n');
+            endErrorMessage = endErrorMessage.Trim('\r');
+            return endErrorMessage ?? string.Empty;
         }
     }
 }

@@ -7,7 +7,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-#pragma warning disable CS8618, CS8602, CS8604
 namespace Ceres
 {
     internal class Bot
@@ -63,4 +62,3 @@ namespace Ceres
         }
     }
 }
-#pragma warning restore CS8618, CS8602, CS8604

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace Ceres.HelperClasses
+﻿namespace Ceres.HelperClasses
 {
     public enum MessageLevel
     {
