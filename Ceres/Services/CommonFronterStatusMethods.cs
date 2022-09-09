@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
 
@@ -11,11 +12,13 @@ namespace Ceres.Services
     {
         private readonly DiscordSocketClient _discord;
         private readonly IConfigurationRoot _config;
+        private readonly LoggingService _logger;
 
         internal CommonFronterStatusMethods(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _discord = discord;
             _config = config;
+            _logger = new();
         }
 
         internal async Task<string> SetFronterStatusAsync()
@@ -39,6 +42,7 @@ namespace Ceres.Services
             catch (ArgumentException ex)
             {
                 statusMessage = "StatusGeneratorException (lol)";
+                await _logger.OnLogAsync(new(LogSeverity.Error, nameof(this.SetFronterStatusAsync), $"Unusual amount of fronters recieved ({string.Join(", ", serializedFronterList.ToArray())})", ex));
                 throw ex;
             }
 #endif
@@ -48,7 +52,7 @@ namespace Ceres.Services
             return statusMessage;
         }
 
-        private async Task<HttpResponseMessage> GetFrontStatusAsync()
+        private async Task<string> GetFrontStatusAsync()
         {
             HttpClient request = new()
             {
@@ -56,20 +60,23 @@ namespace Ceres.Services
             };
             request.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", _config["simplyplural_token"]);
             request.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            HttpResponseMessage frontingStatusResponse = await request.GetAsync("/v1/fronters/");
+            string response = await frontingStatusResponse.Content.ReadAsStringAsync();
 
-            return await request.GetAsync("/v1/fronters/");
+            await _logger.OnLogAsync(new(LogSeverity.Info, nameof(this.GetFrontStatusAsync), $"Recieved response from apparyllis server"));
+
+            return response;
         }
 
         private async Task<List<string>> GetFrontersList()
         {
-            HttpResponseMessage frontingStatusResponse = await GetFrontStatusAsync();
-            string response = await frontingStatusResponse.Content.ReadAsStringAsync();
-            JArray? responseSerialized = JsonConvert.DeserializeObject<JArray?>(response);
+            string response = await GetFrontStatusAsync();
+            JArray responseSerialized = JsonConvert.DeserializeObject<JArray>(response);
             return ParseMembers(responseSerialized);
         }
 
 #pragma warning disable CA1822
-        private List<string> ParseMembers(JArray? responseSerialized)
+        private List<string> ParseMembers(JArray responseSerialized)
 #pragma warning restore CA1822
         {
             if (responseSerialized == null) throw new ArgumentNullException(paramName: nameof(responseSerialized), string.Empty);
@@ -86,7 +93,7 @@ namespace Ceres.Services
 
             for (int i = 0; i < fronterCount; i++)
             {
-                JToken? fronter = responseSerialized[i];
+                JToken fronter = responseSerialized[i];
                 if (!memberIdNames.ContainsKey(fronter["content"].Value<string>("member")))
                     continue;
                 serializedFronterList.Add(memberIdNames[fronter["content"].Value<string>("member")]);

@@ -12,10 +12,10 @@ namespace Ceres.Services
         public FronterStatusService(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _commonFronterStatus = new(discord, config);
-            Timer? timer = new(StatusTimer, null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+            Timer? timer = new(TriggerStatusRefresh, null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
         }
 
-        private async void StatusTimer(object? _)
+        private async void TriggerStatusRefresh(object _)
         {
             await _commonFronterStatus.SetFronterStatusAsync();
         }
