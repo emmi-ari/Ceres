@@ -20,17 +20,31 @@ namespace Ceres.Services
 
         internal async Task<string> SetFronterStatusAsync()
         {
+#if DEBUG
+            string statusMessage = "DBG - No fronter info";
+#else
             List<string> serializedFronterList = await GetFrontersList();
+            string statusMessage = string.Empty;
 
-            string statusMessage = serializedFronterList.Count switch
+            try
             {
-                1 => $"{serializedFronterList[0]} is fronting",
-                2 => $"{serializedFronterList[0]} and {serializedFronterList[1]} are fronting",
-                3 => $"{serializedFronterList[0]}, {serializedFronterList[1]} and {serializedFronterList[2]} are fronting",
-                _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in response", nameof(serializedFronterList))
-            };
+                statusMessage = serializedFronterList.Count switch
+                {
+                    1 => $"{serializedFronterList[0]} is fronting",
+                    2 => $"{serializedFronterList[0]} and {serializedFronterList[1]} are fronting",
+                    3 => $"{serializedFronterList[0]}, {serializedFronterList[1]} and {serializedFronterList[2]} are fronting",
+                    _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in response", nameof(serializedFronterList))
+                };
+            }
+            catch (ArgumentException ex)
+            {
+                statusMessage = "StatusGeneratorException (lol)";
+                throw ex;
+            }
+#endif
 
             await _discord.SetGameAsync(statusMessage);
+
             return statusMessage;
         }
 
