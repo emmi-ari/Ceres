@@ -4,16 +4,15 @@ using Discord.WebSocket;
 
 namespace Ceres.Services
 {
+#pragma warning disable CA1822
     internal class LoggingService
     {
         private readonly DiscordSocketClient _discord;
         private readonly CommandService _commands;
 
         private string LogDirectory { get; init; }
-        //private string LogFile => Path.Combine(LogDirectory, $"{DateTime.UtcNow:yyyy-MM-dd}.txt");
 
-        // DiscordSocketClient and CommandService are injected automatically from the IServiceProvider
-        public LoggingService(DiscordSocketClient discord, CommandService commands)
+        internal LoggingService(DiscordSocketClient discord, CommandService commands)
         {
             LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
 
@@ -29,34 +28,66 @@ namespace Ceres.Services
             LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
         }
 
-        internal Task OnLogAsync(LogMessage msg)
+        internal async Task OnLogAsync(LogMessage msg)
         {
             string logText = $"{DateTime.UtcNow:s} [{msg.Severity}] [{msg.Source}] {msg.Exception?.ToString() ?? msg.Message}";
+            await LogToFile(logText);
+            await LogToConsole(msg.Severity, logText);
+        }
 
-            switch (msg.Severity)
+        // TODO error handling
+        private async Task LogToFile(string logText)
+        {
+            string logFile = Path.Combine(LogDirectory, "ceres.log");
+            if (!File.Exists(logFile))
+                File.Create(logFile);
+            else
+            {
+                FileInfo logFileInfo = new(logFile);
+
+                if (logFileInfo.Length > 1024 * 1024)
+                {
+                    logFileInfo.MoveTo($"{DateTime.Now:uMM}_ceres.log");
+                }
+            }
+
+            using FileStream file = new(logFile, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(file, System.Text.Encoding.UTF8);
+            await sw.WriteAsync(logText + Environment.NewLine);
+        }
+
+        private async Task LogToConsole(LogSeverity severity, string logText)
+        {
+            switch (severity)
             {
                 case LogSeverity.Critical:
                 case LogSeverity.Error:
                     Console.ForegroundColor = ConsoleColor.Red;
-                    return Console.Out.WriteLineAsync(logText);
+                    await Console.Out.WriteLineAsync(logText);
+                    return;
 
                 case LogSeverity.Warning:
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    return Console.Out.WriteLineAsync(logText);
+                    await Console.Out.WriteLineAsync(logText);
+                    return;
 
                 case LogSeverity.Info:
                     Console.ForegroundColor = ConsoleColor.White;
-                    return Console.Out.WriteLineAsync(logText);
+                    await Console.Out.WriteLineAsync(logText);
+                    return;
 
                 case LogSeverity.Debug:
                     Console.ForegroundColor = ConsoleColor.Green;
-                    return Console.Out.WriteLineAsync(logText);
+                    await Console.Out.WriteLineAsync(logText);
+                    return;
 
                 case LogSeverity.Verbose:
                 default:
                     Console.ForegroundColor = ConsoleColor.DarkGray;
-                    return Console.Out.WriteLineAsync(logText);
+                    await Console.Out.WriteLineAsync(logText);
+                    return;
             }
         }
     }
+#pragma warning restore CA1822
 }
