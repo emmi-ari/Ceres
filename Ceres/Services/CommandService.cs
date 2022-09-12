@@ -79,7 +79,7 @@ namespace Ceres.Services
             if (s is not SocketUserMessage msg) return;
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
-            SocketCommandContext? context = new(_discord, msg);
+            SocketCommandContext context = new(_discord, msg);
 
             int argPos = 0;
             if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
@@ -96,8 +96,7 @@ namespace Ceres.Services
                     case "ufront":
                     case "updatef":
                     case "uf":
-                        if (msg.Author.Id.ToString() == _config["botauthor_id"])
-                            await _fronterStatusMethods.SetFronterStatusAsync();
+                        await _fronterStatusMethods.SetFronterStatusAsync();
                         break;
                 }
 

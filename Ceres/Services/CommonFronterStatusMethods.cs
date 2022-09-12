@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+#pragma warning disable CA1822
 namespace Ceres.Services
 {
     internal class CommonFronterStatusMethods
@@ -76,9 +77,7 @@ namespace Ceres.Services
             return ParseMembers(responseSerialized);
         }
 
-#pragma warning disable CA1822
         private List<string> ParseMembers(JArray responseSerialized)
-#pragma warning restore CA1822
         {
             if (responseSerialized == null) throw new ArgumentNullException(paramName: nameof(responseSerialized), string.Empty);
 
@@ -104,3 +103,4 @@ namespace Ceres.Services
         }
     }
 }
+#pragma warning restore CA1822

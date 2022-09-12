@@ -35,25 +35,31 @@ namespace Ceres.Services
             await LogToConsole(msg.Severity, logText);
         }
 
-        // TODO error handling
         private async Task LogToFile(string logText)
         {
-            string logFile = Path.Combine(LogDirectory, "ceres.log");
-            if (!File.Exists(logFile))
-                File.Create(logFile);
-            else
+            try
             {
-                FileInfo logFileInfo = new(logFile);
-
-                if (logFileInfo.Length > 1024 * 1024)
+                string logFile = Path.Combine(LogDirectory, "ceres.log");
+                if (!File.Exists(logFile))
+                    File.Create(logFile);
+                else
                 {
-                    logFileInfo.MoveTo($"{DateTime.Now:uMM}_ceres.log");
-                }
-            }
+                    FileInfo logFileInfo = new(logFile);
 
-            using FileStream file = new(logFile, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new(file, System.Text.Encoding.UTF8);
-            await sw.WriteAsync(logText + Environment.NewLine);
+                    if (logFileInfo.Length > 1024 * 1024)
+                    {
+                        logFileInfo.MoveTo($"{DateTime.Now:uMM}_ceres.log");
+                    }
+                }
+
+                using FileStream file = new(logFile, FileMode.Append, FileAccess.Write);
+                using StreamWriter sw = new(file, System.Text.Encoding.UTF8);
+                await sw.WriteAsync(logText + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                await LogToConsole(LogSeverity.Error, $"Can't access the log file.\n{GetExceptionStringForLog(ex)}");
+            }
         }
 
         private async Task LogToConsole(LogSeverity severity, string logText)
@@ -87,6 +93,40 @@ namespace Ceres.Services
                     await Console.Out.WriteLineAsync(logText);
                     return;
             }
+        }
+
+        private string GetExceptionStringForLog(Exception exception)
+        {
+            if (exception == null)
+                throw new ArgumentNullException(nameof(exception));
+
+            List<string> messages = new()
+            {
+                $"{exception.Message} (0x{exception.HResult:X8})",
+                string.IsNullOrWhiteSpace(exception.StackTrace) ? null : exception.StackTrace + Environment.NewLine
+            };
+
+            if (exception.InnerException != null)
+            {
+                Exception inner = exception.InnerException;
+                while (inner != null)
+                {
+                    messages.Add($"{inner.Message} (0x{inner.HResult:X8})");
+                    messages.Add(inner.StackTrace);
+                    inner = inner.InnerException;
+                }
+            }
+
+            string endErrorMessage = null;
+            foreach (string line in messages)
+            {
+                endErrorMessage += line + Environment.NewLine;
+            }
+
+            endErrorMessage = endErrorMessage.Trim('\n');
+            endErrorMessage = endErrorMessage.Trim('\r');
+
+            return endErrorMessage;
         }
     }
 #pragma warning restore CA1822

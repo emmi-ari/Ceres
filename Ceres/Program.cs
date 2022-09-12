@@ -20,7 +20,7 @@ namespace Ceres
 
         public Bot()
         {
-            IConfigurationBuilder? builder = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory).AddJsonFile("ceres_config.json");
+            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory).AddJsonFile("ceres_config.json");
             Configuration = builder.Build();
         }
 
