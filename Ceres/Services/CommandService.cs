@@ -8,9 +8,8 @@ namespace Ceres.Services
     public class CommandsModule : ModuleBase<SocketCommandContext>
     {
         [Command("updatefront")]
-        [Alias("update", "ufront", "uf", "updatef")]
+        [Alias("u", "update", "ufront", "uf", "updatef")]
         [Summary("Updates the fronting status")]
-        [RequireOwner(ErrorMessage = "Only runnable by the bot owner")]
         public Task UpdateFront()
         {
             return ReplyAsync("Front status update started");
@@ -85,8 +84,12 @@ namespace Ceres.Services
             int argPos = 0;
             if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
+                string commandWithoutPrefix = msg.Content.Replace(_config["prefix"], string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(commandWithoutPrefix))
+                    return;
+
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);
-                switch (msg.Content.Trim().Replace("!", string.Empty))
+                switch (commandWithoutPrefix)
                 {
                     case "update":
                     case "updatefront":

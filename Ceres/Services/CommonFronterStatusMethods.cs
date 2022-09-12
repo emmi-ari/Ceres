@@ -25,6 +25,7 @@ namespace Ceres.Services
         {
 #if DEBUG
             string statusMessage = "DBG - No fronter info";
+            await _logger.OnLogAsync(new(LogSeverity.Debug, nameof(this.SetFronterStatusAsync), $"Debug"));
 #else
             List<string> serializedFronterList = await GetFrontersList();
             string statusMessage = string.Empty;

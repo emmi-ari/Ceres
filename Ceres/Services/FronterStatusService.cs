@@ -7,17 +7,30 @@ namespace Ceres.Services
     internal class FronterStatusService
     {
         private readonly CommonFronterStatusMethods _commonFronterStatus;
+        private readonly PeriodicTimer _timer;
+        private bool _initialState = true;
 
         // DiscordSocketClient, CommandService, and IConfigurationRoot are injected automatically from the IServiceProvider
         public FronterStatusService(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _commonFronterStatus = new(discord, config);
-            Timer? timer = new(TriggerStatusRefresh, null, TimeSpan.Zero, TimeSpan.FromMinutes(10));
+            _timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
+            TriggerStatusRefresh();
         }
 
-        private async void TriggerStatusRefresh(object _)
+        private async void TriggerStatusRefresh()
         {
-            await _commonFronterStatus.SetFronterStatusAsync();
+            if (!_initialState)
+            {
+                while (await _timer.WaitForNextTickAsync())
+                {
+                    await _commonFronterStatus.SetFronterStatusAsync();
+                }
+            }
+            else
+            {
+                await _commonFronterStatus.SetFronterStatusAsync();
+            }
         }
     }
 }
