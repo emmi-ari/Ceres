@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
@@ -63,6 +64,10 @@ namespace Ceres.Services
         private readonly IConfigurationRoot _config;
         private readonly IServiceProvider _provider;
         private readonly CommonFronterStatusMethods _fronterStatusMethods;
+        private readonly LoggingService _logger;
+
+        private readonly Dictionary<string, ulong> _channelDictionary = new() { { "brett", 1014569711754813620 },
+                                                                                { "bot-spam", 1014562565902307359 } };
 
         public CommandHandler(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
         {
@@ -71,7 +76,29 @@ namespace Ceres.Services
             _config = config;
             _provider = provider;
             _fronterStatusMethods = new(discord, config);
+            _logger = new();
             _discord.MessageReceived += OnMessageReceivedAsync;
+            _discord.ReactionAdded += OnReactionRecivedAsync;
+        }
+
+        private async Task OnReactionRecivedAsync(Cacheable<IUserMessage, ulong> reactedMsgUserContext, Cacheable<IMessageChannel, ulong> msgContext, SocketReaction reactionCtx)
+        {
+            ulong reactedMessageId = reactedMsgUserContext.Id;
+            IMessage reactedMsg = await reactionCtx.Channel.GetMessageAsync(reactedMessageId);
+            bool isDeleteReaction = reactionCtx.Emote.Name == "❌";
+            string brettOriginalMsgAuthor = reactedMsg.Embeds.Select(embed => embed.Author.Value)
+                                                             .Where(author => author.Name.StartsWith(reactionCtx.User.Value.Username)) // Condition
+                                                             .FirstOrDefault().Name;
+
+            if (string.IsNullOrEmpty(brettOriginalMsgAuthor))
+                return;
+            else if (reactionCtx.Channel.Id == _channelDictionary["brett"] && isDeleteReaction)
+            {
+                string logMsg = $"{reactionCtx.User.Value.Username}#{reactionCtx.User.Value.Discriminator} deleted one of their messages from #{reactionCtx.Channel.Name} (msg ID {reactedMsgUserContext.Id})";
+                LogMessage log = new(LogSeverity.Info, nameof(this.OnReactionRecivedAsync), logMsg);
+                await _logger.OnLogAsync(log);
+                await reactedMsg.DeleteAsync();
+            }
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -82,9 +109,9 @@ namespace Ceres.Services
             SocketCommandContext context = new(_discord, msg);
 
             int argPos = 0;
-            if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
+            if (msg.HasStringPrefix(_config["ceres.prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
-                string commandWithoutPrefix = msg.Content.Replace(_config["prefix"], string.Empty).Trim();
+                string commandWithoutPrefix = msg.Content.Replace(_config["ceres.prefix"], string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(commandWithoutPrefix))
                     return;
 

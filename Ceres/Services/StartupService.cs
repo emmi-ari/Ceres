@@ -26,8 +26,8 @@ namespace Ceres.Services
 
         public async Task StartAsync()
         {
-            string discordToken = _config["discord_token"];
-            if (string.IsNullOrWhiteSpace(_config["discord_token"]))
+            string discordToken = _config["ceres.discord_token"];
+            if (string.IsNullOrWhiteSpace(_config["ceres.discord_token"]))
                 throw new Exception($"No discord token in ceres_config.json");
 
             await _discord.LoginAsync(TokenType.Bot, discordToken);

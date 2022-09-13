@@ -362,8 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-#Token
-simplyplural_token
-discord_token
+#Custom
 *token
 ceres_config.json
