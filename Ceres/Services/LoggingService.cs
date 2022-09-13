@@ -70,33 +70,48 @@ namespace Ceres.Services
 
         private async Task LogToConsole(LogSeverity severity, string logText)
         {
+            ConsoleColor defaultForegroundColor = Console.ForegroundColor;
+            ConsoleColor defaultBackgroundColor = Console.BackgroundColor;
+
             switch (severity)
             {
                 case LogSeverity.Critical:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.BackgroundColor = ConsoleColor.White;
+                    await Console.Out.WriteLineAsync(logText);
+                    Console.ForegroundColor = defaultForegroundColor;
+                    Console.BackgroundColor = defaultBackgroundColor;
+                    return;
+
                 case LogSeverity.Error:
                     Console.ForegroundColor = ConsoleColor.Red;
                     await Console.Out.WriteLineAsync(logText);
+                    Console.ForegroundColor = defaultForegroundColor;
                     return;
 
                 case LogSeverity.Warning:
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     await Console.Out.WriteLineAsync(logText);
+                    Console.ForegroundColor = defaultForegroundColor;
                     return;
 
                 case LogSeverity.Info:
                     Console.ForegroundColor = ConsoleColor.White;
                     await Console.Out.WriteLineAsync(logText);
+                    Console.ForegroundColor = defaultForegroundColor;
                     return;
 
                 case LogSeverity.Debug:
                     Console.ForegroundColor = ConsoleColor.Green;
                     await Console.Out.WriteLineAsync(logText);
+                    Console.ForegroundColor = defaultForegroundColor;
                     return;
 
                 case LogSeverity.Verbose:
                 default:
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     await Console.Out.WriteLineAsync(logText);
+                    Console.ForegroundColor = defaultForegroundColor;
                     return;
             }
         }
