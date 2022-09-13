@@ -40,6 +40,8 @@ namespace Ceres.Services
         internal LoggingService()
         {
             LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+            _logFilePath = Path.Combine(LogDirectory, "ceres.log");
+            InitializeLogFile();
         }
 
         internal async Task OnLogAsync(LogMessage msg)
@@ -76,6 +78,16 @@ namespace Ceres.Services
             switch (severity)
             {
                 case LogSeverity.Critical:
+#if WINDOWS
+                    Console.Beep(2500, 150);
+                    Console.Beep(2000, 100);
+                    Console.Beep(2500, 200);
+                    Console.Beep(2000, 150);
+                    Console.Beep(2500, 250);
+                    Console.Beep(2000, 200);
+#else
+                    Console.Beep();
+#endif
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.BackgroundColor = ConsoleColor.White;
                     await Console.Out.WriteLineAsync(logText);
@@ -144,8 +156,8 @@ namespace Ceres.Services
                 endErrorMessage += line + Environment.NewLine;
             }
 
-            endErrorMessage += $"{new('=', (Console.WindowWidth / 2) - 9)} End of exception {new('=', (Console.WindowWidth / 2) - 9)}";
-            endErrorMessage += $"Exception was of type {exception.GetType()}";
+            endErrorMessage += $"{new('=', (Console.WindowWidth / 2) - 9)} End of exception {new('=', (Console.WindowWidth / 2) - 9)}" + Environment.NewLine;
+            endErrorMessage += $"Exception was of type {exception.GetType()}" + Environment.NewLine;
             endErrorMessage += $"{new('=', Console.WindowWidth)}";
 
             return endErrorMessage;
