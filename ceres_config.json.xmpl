@@ -1,0 +1,12 @@
+{
+    "ceres.discord_token": "https://discord.com/developers/applications -> Your application -> OAuth 2/General -> Client secret",
+    "ceres.prefix": "!",
+    "apparyllis.simplyplural_token": "SimplyPlural dashboard -> Tokens -> Add Token -> Only select 'Read' -> Add token",
+    "apparyllis.members": "MemberXName_MemberXId MemberYName_MemberYId MemberZName_MemberZId Jane_62acb12a7cc97c114a0ea31a"
+}
+
+// Getting Member ID from Simply Plural:
+// 1. Dashboard
+// 2. Members
+// 3. Select member
+// 4. Go to options tab (the last one), it's under' "Simply Plural member ID"
