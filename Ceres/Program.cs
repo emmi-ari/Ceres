@@ -41,10 +41,15 @@ namespace Ceres
 
         private void ConfigureServices(IServiceCollection services)
         {
+#if DEBUG
+            LogSeverity logSeverity = LogSeverity.Debug;
+#else
+            LogSeverity logSeverity = GetLogSeverity();
+#endif
             LoggingService logger = new();
             DiscordSocketClient client = new(new DiscordSocketConfig
             {
-                LogLevel = LogSeverity.Verbose,
+                LogLevel = logSeverity,
                 MessageCacheSize = 50,
                 GatewayIntents = (GatewayIntents)0x7EBD
             });
@@ -52,7 +57,7 @@ namespace Ceres
 
             CommandService commands = new(new CommandServiceConfig
             {
-                LogLevel = LogSeverity.Verbose,
+                LogLevel = logSeverity,
                 DefaultRunMode = RunMode.Async
             });
             commands.Log += logger.OnLogAsync;
@@ -64,6 +69,19 @@ namespace Ceres
             .AddSingleton<FronterStatusService>()
             .AddSingleton<Random>()
             .AddSingleton(Configuration);
+        }
+
+        private LogSeverity GetLogSeverity()
+        {
+            return Configuration["ceres.log_level"].ToUpper() switch
+            {
+                "CRITICAL" => LogSeverity.Critical,
+                "ERROR" => LogSeverity.Error,
+                "WARNING" => LogSeverity.Warning,
+                "INFO" => LogSeverity.Info,
+                "DEBUG" => LogSeverity.Debug,
+                _ => LogSeverity.Verbose,
+            };
         }
     }
 }

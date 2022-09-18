@@ -8,6 +8,12 @@ namespace Ceres.Services
 {
     public class CommandsModule : ModuleBase<SocketCommandContext>
     {
+        LoggingService _log;
+
+        public CommandsModule()
+        {
+            _log = new LoggingService();
+        }
         enum CeresCommand
         {
             UpdateFront,
@@ -112,6 +118,13 @@ namespace Ceres.Services
             }
 
             return ReplyAsync(errorMsg);
+        }
+
+        protected override async Task BeforeExecuteAsync(CommandInfo command)
+        {
+            LogMessage log = new(LogSeverity.Info, command.Name.ToUpper(), $"{Context.User.Username}#{Context.User.Discriminator} used a command in #{Context.Channel.Name}");
+            await _log.OnLogAsync(log);
+            await base.BeforeExecuteAsync(command);
         }
     }
 
