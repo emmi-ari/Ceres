@@ -16,12 +16,10 @@ namespace Ceres.Services
         public FronterStatusService(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _commonFronterStatus = new(discord, config);
-#if DEBUG
-            _timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
-#else
+#if !DEBUG
             _timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
-#endif
             TriggerStatusRefresh();
+#endif
         }
 
         private async void TriggerStatusRefresh()

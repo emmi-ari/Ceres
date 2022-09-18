@@ -46,7 +46,11 @@ namespace Ceres.Services
 
         internal async Task OnLogAsync(LogMessage msg)
         {
+#if DEBUG
+            string logText = $"{DateTime.UtcNow:s} DBG [{msg.Severity}] [{msg.Source}] {msg.Exception?.ToString() ?? msg.Message}";
+#else
             string logText = $"{DateTime.UtcNow:s} [{msg.Severity}] [{msg.Source}] {msg.Exception?.ToString() ?? msg.Message}";
+#endif
             await LogToFile(logText);
             await LogToConsole(msg.Severity, logText);
         }
@@ -59,7 +63,7 @@ namespace Ceres.Services
                 using StreamWriter sw = new(file, System.Text.Encoding.UTF8);
                 await sw.WriteAsync(logText + Environment.NewLine);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (!secondTry)
                 {
