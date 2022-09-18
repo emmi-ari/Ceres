@@ -8,6 +8,14 @@ namespace Ceres.Services
 {
     public class CommandsModule : ModuleBase<SocketCommandContext>
     {
+        enum CeresCommand
+        {
+            UpdateFront,
+            Egg,
+            AddReaction,
+            WhoKnows
+        }
+
         [Command("updatefront")]
         [Alias("u", "update", "ufront", "uf", "updatef")]
         [Summary("Updates the fronting status")]
@@ -22,7 +30,50 @@ namespace Ceres.Services
         public Task Egg()
         {
             return Context.Channel.SendFileAsync(@"C:\Users\Emmi\Documents\ähm\ei.png");
-        }   
+        }
+
+        [Command("react")]
+        [Summary("Adds a reaction to a message")]
+        public Task AddReaction(string emote, string messageId = null)
+        {
+            IMessage msg = null;
+            if (messageId != null)
+            {
+                bool channelValid = ulong.TryParse(messageId, out ulong messageIdUlong);
+                msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync(messageIdUlong); }).Result;
+                if (msg == null)
+                {
+                    return CommandError(CeresCommand.AddReaction, "Error: **Command must be executed in the same channel**");
+                }
+                if (!channelValid)
+                {
+                    return CommandError(CeresCommand.AddReaction, "Error: **Something's wrong with the message ID**");
+                }
+            }
+            else
+            {
+                if (Context.Message.Reference == null)
+                    return CommandError(CeresCommand.AddReaction, "Error: **No message ID specified and not replied to any message**");
+
+                msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId); }).Result;
+            }
+
+            dynamic reaction = null;
+            Emote emoteReaction = null;
+            Emoji emojiReaction = null;
+            bool emoteValid = Emote.TryParse(emote, out emoteReaction);
+            if (!emoteValid)
+            {
+                emojiReaction = new Emoji(emote);
+                reaction = emojiReaction;
+            }
+            else
+            {
+                reaction = emoteReaction;
+            }
+
+            return msg.AddReactionAsync(reaction);
+        }
 
         [Command("whoknows")]
         [Alias("wk")]
@@ -31,28 +82,17 @@ namespace Ceres.Services
             return ReplyAsync("```ANSI\n[0;31mDid you mean: [4;34m/whoknows```");
         }
 
-        // ~sample square 20 -> 400
-        [Command("square")]
-        [Summary("Squares a number.")]
-        public async Task SquareAsync([Summary("The number to square.")] int num)
+        private Task CommandError(CeresCommand command, string errorMsg)
         {
-            // We can also access the channel from the Command Context.
-            await Context.Channel.SendMessageAsync($"{num}^2 = {Math.Pow(num, 2)}");
-        }
+            switch (command)
+            {
+                case CeresCommand.AddReaction:
+                    errorMsg += "\nUsage `!react [emote] [messageId]`";
+                    errorMsg += "\nUsage `!react [emote]` when replying to a message. The replied to message will be used as reaction target.";
+                    break;
+            }
 
-        // ~sample userinfo --> foxbot#0282
-        // ~sample userinfo @Khionu --> Khionu#8708
-        // ~sample userinfo Khionu#8708 --> Khionu#8708
-        // ~sample userinfo Khionu --> Khionu#8708
-        // ~sample userinfo 96642168176807936 --> Khionu#8708
-        // ~sample whois 96642168176807936 --> Khionu#8708
-        [Command("userinfo")]
-        [Summary("Returns info about the current user, or the user parameter, if one passed.")]
-        [Alias("user", "whois")]
-        public async Task UserInfoAsync([Summary("The (optional) user to get info from")] SocketUser user = null)
-        {
-            var userInfo = user ?? Context.Client.CurrentUser;
-            await ReplyAsync($"{userInfo.Username}#{userInfo.Discriminator}");
+            return ReplyAsync(errorMsg);
         }
     }
 
@@ -88,6 +128,7 @@ namespace Ceres.Services
         //    return;
         //}
 
+        [Obsolete(message: "Functionality now in BLIMP!", error: true)]
         private async Task OnReactionRecivedAsync(Cacheable<IUserMessage, ulong> reactedMsgUserContext, Cacheable<IMessageChannel, ulong> msgContext, SocketReaction reactionCtx)
         {
             if (reactionCtx.Emote.Name == "❌" && reactionCtx.Channel.Id == _channelDictionary["brett"])
