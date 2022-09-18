@@ -13,6 +13,7 @@ namespace Ceres.Services
             UpdateFront,
             Egg,
             AddReaction,
+            Say,
             WhoKnows
         }
 
@@ -77,7 +78,7 @@ namespace Ceres.Services
 
         [Command("echo")]
         [Alias("say")]
-        public Task Say(string msg, ulong channelId = 0ul, ulong guildId = 0ul)
+        public Task Say(string msg, ulong channelId = 0ul, ulong guildId = 0ul, ulong replyToMsgID = 0ul)
         {
             if (guildId == 0)
                 guildId = Context.Guild.Id;
@@ -86,7 +87,11 @@ namespace Ceres.Services
 
             SocketGuild guild = Context.Client.GetGuild(guildId);
             IMessageChannel channel = guild.GetChannel(channelId) as IMessageChannel;
-            return channel.SendMessageAsync(msg);
+            MessageReference reference = new(replyToMsgID, channelId, guildId, true);
+
+            return (ulong)reference.MessageId == 0
+                ? channel.SendMessageAsync(msg)
+                : channel.SendMessageAsync(msg, messageReference: reference);
         }
 
         [Command("whoknows")]
