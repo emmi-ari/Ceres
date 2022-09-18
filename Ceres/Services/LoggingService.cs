@@ -13,6 +13,13 @@ namespace Ceres.Services
         private string LogDirectory { get; init; }
         private readonly string _logFilePath;
 
+        internal LoggingService()
+        {
+            LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+            _logFilePath = Path.Combine(LogDirectory, "ceres.log");
+            InitializeLogFile();
+        }
+
         internal LoggingService(DiscordSocketClient discord, CommandService commands)
         {
             LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
@@ -37,13 +44,6 @@ namespace Ceres.Services
             }
         }
 
-        internal LoggingService()
-        {
-            LogDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
-            _logFilePath = Path.Combine(LogDirectory, "ceres.log");
-            InitializeLogFile();
-        }
-
         internal async Task OnLogAsync(LogMessage msg)
         {
             string logText = $"{DateTime.UtcNow:s} [{msg.Severity}] [{msg.Source}] {msg.Exception?.ToString() ?? msg.Message}";
@@ -66,7 +66,7 @@ namespace Ceres.Services
                     await Task.Delay(500);
                     await LogToFile(logText, true);
                 }
-                await LogToConsole(LogSeverity.Error, $"Can't access the log file.\n{GetExceptionStringForLog(ex)}");
+                await LogToConsole(LogSeverity.Error, $"Can't access the log file.");
             }
         }
 
@@ -156,9 +156,9 @@ namespace Ceres.Services
                 endErrorMessage += line + Environment.NewLine;
             }
 
-            endErrorMessage += $"{new('=', (Console.WindowWidth / 2) - 9)} End of exception {new('=', (Console.WindowWidth / 2) - 9)}" + Environment.NewLine;
+            endErrorMessage += $"{new('=', (Console.WindowWidth / 2) - 9)} End of exception {new('=', (Console.WindowWidth / 2) - 10)}" + Environment.NewLine;
             endErrorMessage += $"Exception was of type {exception.GetType()}" + Environment.NewLine;
-            endErrorMessage += $"{new('=', Console.WindowWidth)}";
+            endErrorMessage += $"{new('=', Console.WindowWidth - 1)}";
 
             return endErrorMessage;
         }

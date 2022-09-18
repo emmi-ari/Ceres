@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-#pragma warning disable CA1822
 namespace Ceres.Services
 {
     internal class FronterStatusService
@@ -144,4 +143,3 @@ namespace Ceres.Services
         }
     }
 }
-#pragma warning restore CA1822

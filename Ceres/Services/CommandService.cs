@@ -22,14 +22,13 @@ namespace Ceres.Services
         public Task Egg()
         {
             return Context.Channel.SendFileAsync(@"C:\Users\Emmi\Documents\ähm\ei.png");
-        }
+        }   
 
-        [Command("say")]
-        [Alias("echo", "print")]
-        [Summary("Echoes a message.")]
-        public Task SayAsync([Remainder][Summary("The text to echo")] string echo)
+        [Command("whoknows")]
+        [Alias("wk")]
+        public Task WhoKnows()
         {
-            return ReplyAsync(echo);
+            return ReplyAsync("```ANSI\n[0;31mDid you mean: [4;34m/whoknows```");
         }
 
         // ~sample square 20 -> 400
@@ -78,22 +77,30 @@ namespace Ceres.Services
             _fronterStatusMethods = new(discord, config);
             _logger = new();
             _discord.MessageReceived += OnMessageReceivedAsync;
+#if false
             _discord.ReactionAdded += OnReactionRecivedAsync;
+            _discord.ThreadCreated += OnThreadCreated;
+#endif
         }
+
+        //private async Task OnThreadCreated(SocketThreadChannel arg)
+        //{
+        //    return;
+        //}
 
         private async Task OnReactionRecivedAsync(Cacheable<IUserMessage, ulong> reactedMsgUserContext, Cacheable<IMessageChannel, ulong> msgContext, SocketReaction reactionCtx)
         {
-            ulong reactedMessageId = reactedMsgUserContext.Id;
-            IMessage reactedMsg = await reactionCtx.Channel.GetMessageAsync(reactedMessageId);
-            bool isDeleteReaction = reactionCtx.Emote.Name == "❌";
-            string brettOriginalMsgAuthor = reactedMsg.Embeds.Select(embed => embed.Author.Value)
-                                                             .Where(author => author.Name.StartsWith(reactionCtx.User.Value.Username)) // Condition
-                                                             .FirstOrDefault().Name;
-
-            if (string.IsNullOrEmpty(brettOriginalMsgAuthor))
-                return;
-            else if (reactionCtx.Channel.Id == _channelDictionary["brett"] && isDeleteReaction)
+            if (reactionCtx.Emote.Name == "❌" && reactionCtx.Channel.Id == _channelDictionary["brett"])
             {
+                ulong reactedMessageId = reactedMsgUserContext.Id;
+                IMessage reactedMsg = await reactionCtx.Channel.GetMessageAsync(reactedMessageId);
+                string brettOriginalMsgAuthor = reactedMsg.Embeds?.Select(embed => embed.Author.Value)
+                                                                 ?.Where(author => author.Name.StartsWith(reactionCtx.User.Value.Username)) // Condition
+                                                                 ?.FirstOrDefault().Name;
+
+                if (string.IsNullOrEmpty(brettOriginalMsgAuthor))
+                    return;
+
                 string logMsg = $"{reactionCtx.User.Value.Username}#{reactionCtx.User.Value.Discriminator} deleted one of their messages from #{reactionCtx.Channel.Name} (msg ID {reactedMsgUserContext.Id})";
                 LogMessage log = new(LogSeverity.Info, nameof(this.OnReactionRecivedAsync), logMsg);
                 await _logger.OnLogAsync(log);
