@@ -75,6 +75,20 @@ namespace Ceres.Services
             return msg.AddReactionAsync(reaction);
         }
 
+        [Command("echo")]
+        [Alias("say")]
+        public Task Say(string msg, ulong channelId = 0ul, ulong guildId = 0ul)
+        {
+            if (guildId == 0)
+                guildId = Context.Guild.Id;
+            if (channelId == 0)
+                channelId = Context.Channel.Id;
+
+            SocketGuild guild = Context.Client.GetGuild(guildId);
+            IMessageChannel channel = guild.GetChannel(channelId) as IMessageChannel;
+            return channel.SendMessageAsync(msg);
+        }
+
         [Command("whoknows")]
         [Alias("wk")]
         public Task WhoKnows()
@@ -128,7 +142,7 @@ namespace Ceres.Services
         //    return;
         //}
 
-        [Obsolete(message: "Functionality now in BLIMP!", error: true)]
+        [Obsolete(message: "Functionality now in BLIMP", error: true)]
         private async Task OnReactionRecivedAsync(Cacheable<IUserMessage, ulong> reactedMsgUserContext, Cacheable<IMessageChannel, ulong> msgContext, SocketReaction reactionCtx)
         {
             if (reactionCtx.Emote.Name == "❌" && reactionCtx.Channel.Id == _channelDictionary["brett"])
