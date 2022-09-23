@@ -107,6 +107,13 @@ namespace Ceres.Services
             return ReplyAsync("```ANSI\n[0;31mDid you mean: [4;34m/whoknows```");
         }
 
+        [Command("FrontHistory")]
+        [Alias("history")]
+        public Task FrontHistory()
+        {
+            return new Task(() => { });
+        }
+
         private Task CommandError(CeresCommand command, string errorMsg)
         {
             switch (command)
@@ -195,7 +202,7 @@ namespace Ceres.Services
                 if (string.IsNullOrWhiteSpace(commandWithoutPrefix))
                     return;
 
-                var result = await _commands.ExecuteAsync(context, argPos, _provider);
+                IResult result = await _commands.ExecuteAsync(context, argPos, _provider);
                 switch (commandWithoutPrefix)
                 {
                     case "update":
@@ -203,7 +210,19 @@ namespace Ceres.Services
                     case "ufront":
                     case "updatef":
                     case "uf":
+                    case "u":
                         await _fronterStatusMethods.SetFronterStatusAsync();
+                        break;
+                    case "fronthistory":
+                    case "history":
+#if DEBUG
+                        ulong startTime = (ulong)((DateTimeOffset)DateTime.Now.AddDays(-7)).ToUnixTimeMilliseconds();
+                        ulong endTime = (ulong)((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds();
+                        string frontHistory = await _fronterStatusMethods.GetFrontHistory(startTime, endTime);
+                        await context.Channel.SendMessageAsync(text: frontHistory);
+#else
+                        context.Channel.SendMessageAsync("Error: FrontHistory is not implemented yet or Ceres is not running in debug mode");
+#endif
                         break;
                 }
 
