@@ -1,11 +1,10 @@
-﻿using Ceres.Models;
-
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Ceres.Services
 {
@@ -17,7 +16,7 @@ namespace Ceres.Services
         public FronterStatusService(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _commonFronterStatus = new(discord, config);
-#if RELEASE
+#if !DEBUG
             _timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
             TriggerStatusRefresh();
 #endif
@@ -39,7 +38,6 @@ namespace Ceres.Services
         private readonly IConfigurationRoot _config;
         private readonly LoggingService _logger;
         private readonly Dictionary<string, string> _memberIdNames;
-        private readonly HttpClient _request;
 
         internal CommonFronterStatusMethods(DiscordSocketClient discord, IConfigurationRoot config)
         {
@@ -47,13 +45,6 @@ namespace Ceres.Services
             _config = config;
             _logger = new();
             _memberIdNames = GetMemberIdNames();
-            HttpClient request = new()
-            {
-                BaseAddress = new("https://api.apparyllis.com:8443")
-            };
-            request.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", _config["apparyllis.simplyplural_token"]);
-            request.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            _request = request;
         }
 
         private Dictionary<string, string> GetMemberIdNames()
@@ -74,23 +65,23 @@ namespace Ceres.Services
             string statusMessage = "DBG - No fronter info";
             await _logger.OnLogAsync(new(LogSeverity.Debug, nameof(this.SetFronterStatusAsync), $"Debug"));
 #else
-            List<FrontMemberInfos> serializedFronterList = await GetFrontersList();
+            List<string> serializedFronterList = await GetFrontersList();
             string statusMessage = string.Empty;
 
             try
             {
                 statusMessage = serializedFronterList.Count switch
                 {
-                    1 => $"{serializedFronterList[0].MemberName} is fronting",
-                    2 => $"{serializedFronterList[0].MemberName} and {serializedFronterList[1].MemberName} are fronting",
-                    3 => $"{serializedFronterList[0].MemberName}, {serializedFronterList[1].MemberName} and {serializedFronterList[2].MemberName} are fronting",
-                    _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in _response", nameof(serializedFronterList))
+                    1 => $"{serializedFronterList[0]} is fronting",
+                    2 => $"{serializedFronterList[0]} and {serializedFronterList[1]} are fronting",
+                    3 => $"{serializedFronterList[0]}, {serializedFronterList[1]} and {serializedFronterList[2]} are fronting",
+                    _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in response", nameof(serializedFronterList))
                 };
             }
             catch (ArgumentException ex)
             {
                 statusMessage = "StatusGeneratorException (lol)";
-                await _logger.OnLogAsync(new(LogSeverity.Error, nameof(this.SetFronterStatusAsync), $"Unusual amount of fronters recieved ({serializedFronterList.Count})", ex));
+                await _logger.OnLogAsync(new(LogSeverity.Error, nameof(this.SetFronterStatusAsync), $"Unusual amount of fronters recieved ({string.Join(", ", serializedFronterList.ToArray())})", ex));
                 throw ex;
             }
 #endif
@@ -100,23 +91,17 @@ namespace Ceres.Services
             return statusMessage;
         }
 
-        private async Task<ApparyllisModel> GetFrontStatusAsync()
+        private async Task<string> GetFrontStatusAsync()
         {
-#if RELEASE
-            
-            HttpResponseMessage frontingStatusResponse = await _request.GetAsync("/v1/fronters/");
+            HttpClient request = new()
+            {
+                BaseAddress = new("https://api.apparyllis.com:8443")
+            };
+            request.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", _config["apparyllis.simplyplural_token"]);
+            request.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            HttpResponseMessage frontingStatusResponse = await request.GetAsync("/v1/fronters/");
             string response = await frontingStatusResponse.Content.ReadAsStringAsync();
-            response = "{\"response\":" + response + "}";
-#else
-            string responseSingularFronter = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}}";
-            string responseMultipleFronters = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebc\",\"content\":{\"custom\":false,\"startTime\":1663611071274,\"member\":\"623ccab6820d5b982fb848b7\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611071264}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebd\",\"content\":{\"custom\":false,\"startTime\":1663611072458,\"member\":\"623cca89820d5b982fb848b6\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611072458}}";
-            // TODO response = response = "{\"response\":" + response + "}";
-
-            ApparyllisResponseModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisResponseModel>(responseSingularFronter);
-#endif
-#if RELEASE
-            ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
-            string logMessage = $"Recieved _response from apparyllis server: {frontingStatusResponse.StatusCode}";
+            string logMessage = $"Recieved response from apparyllis server: {frontingStatusResponse.StatusCode}";
             LogSeverity severity = LogSeverity.Info;
             if (frontingStatusResponse.IsSuccessStatusCode)
             {
@@ -127,46 +112,32 @@ namespace Ceres.Services
 
             await _logger.OnLogAsync(new(severity, nameof(this.GetFrontStatusAsync), logMessage));
 
-            return serializedResponse;
-#else
-            return responseSingularFronter;
-#endif
+            return response;
         }
 
-        private async Task<List<FrontMemberInfos>> GetFrontersList()
+        private async Task<List<string>> GetFrontersList()
         {
-            ApparyllisModel response = await GetFrontStatusAsync();
-            return ParseMembers(response);
+            string response = await GetFrontStatusAsync();
+            JArray responseSerialized = JsonConvert.DeserializeObject<JArray>(response);
+            return ParseMembers(responseSerialized);
         }
 
-        private List<FrontMemberInfos> ParseMembers(ApparyllisModel responseSerialized)
+        private List<string> ParseMembers(JArray responseSerialized)
         {
             if (responseSerialized == null) throw new ArgumentNullException(paramName: nameof(responseSerialized), string.Empty);
 
-            int fronterCount = responseSerialized.Apparyllis.Length;
-            List<FrontMemberInfos> serializedFronterList = new(fronterCount);
+            int fronterCount = responseSerialized.Count;
+            List<string> serializedFronterList = new(fronterCount);
 
             for (int i = 0; i < fronterCount; i++)
             {
-                ApparyllisContent fronter = responseSerialized.Apparyllis[i]?.Content;
-                if (fronter is null)
+                JToken fronter = responseSerialized[i];
+                if (!_memberIdNames.ContainsKey(fronter["content"].Value<string>("member")))
                     continue;
-
-                serializedFronterList.Add(new (_memberIdNames[fronter.Member], fronter.StartTime, fronter.EndTime));
+                serializedFronterList.Add(_memberIdNames[fronter["content"].Value<string>("member")]);
             }
 
             return serializedFronterList;
-        }
-
-        internal async Task<string> GetFrontHistory(ulong startTime, ulong endTime)
-        {
-            
-            HttpResponseMessage frontHistoryResponse = await _request.GetAsync($"/v1/frontHistory/{_config["apparyllis.systemid"]}?startTime={startTime}&endTime={endTime}");
-            string response = await frontHistoryResponse.Content.ReadAsStringAsync();
-            response = "{\"response\":" + response + "}";
-            ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
-            List<FrontMemberInfos> info = ParseMembers(serializedResponse);
-            return response;
         }
     }
 }
