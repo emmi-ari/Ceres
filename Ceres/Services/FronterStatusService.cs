@@ -87,7 +87,7 @@ namespace Ceres.Services
                     1 => $"{serializedFronterList[0].MemberName} is fronting",
                     2 => $"{serializedFronterList[0].MemberName} and {serializedFronterList[1].MemberName} are fronting",
                     3 => $"{serializedFronterList[0].MemberName}, {serializedFronterList[1].MemberName} and {serializedFronterList[2].MemberName} are fronting",
-                    _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in _response", nameof(serializedFronterList))
+                    _ => throw new ArgumentException($"Unusual amount ({serializedFronterList?.Count}) of fronters in response", nameof(serializedFronterList))
                 };
             }
             catch (ArgumentException ex)
@@ -119,7 +119,7 @@ namespace Ceres.Services
 #endif
 #if RELEASE
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
-            string logMessage = $"Recieved _response from apparyllis server: {frontingStatusResponse.StatusCode}";
+            string logMessage = $"Recieved response from apparyllis server: {frontingStatusResponse.StatusCode}";
             LogSeverity severity = LogSeverity.Info;
             if (frontingStatusResponse.IsSuccessStatusCode)
             {

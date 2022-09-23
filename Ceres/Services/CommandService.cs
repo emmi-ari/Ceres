@@ -5,7 +5,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 
 // (\#if )(DEBUG|RELEASE)
-// $1!$2
+// $1!$2F
 
 namespace Ceres.Services
 {
