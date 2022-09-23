@@ -4,6 +4,9 @@ using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
 
+// (\#if )(DEBUG|RELEASE)
+// $1!$2
+
 namespace Ceres.Services
 {
     public class CommandsModule : ModuleBase<SocketCommandContext>

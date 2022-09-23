@@ -7,6 +7,9 @@ using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json;
 
+// (\#if )(DEBUG|RELEASE)
+// $1!$2
+
 namespace Ceres.Services
 {
     internal class FronterStatusService
