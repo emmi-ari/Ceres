@@ -116,7 +116,7 @@ namespace Ceres.Services
             string responseMultipleFronters = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebc\",\"content\":{\"custom\":false,\"startTime\":1663611071274,\"member\":\"623ccab6820d5b982fb848b7\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611071264}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebd\",\"content\":{\"custom\":false,\"startTime\":1663611072458,\"member\":\"623cca89820d5b982fb848b6\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611072458}}";
             // TODO response = response = "{\"response\":" + response + "}";
 
-            ApparyllisResponseModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisResponseModel>(responseSingularFronter);
+            ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(responseSingularFronter);
 #endif
 #if RELEASE
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
@@ -133,7 +133,7 @@ namespace Ceres.Services
 
             return serializedResponse;
 #else
-            return responseSingularFronter;
+            return serializedResponse;
 #endif
         }
 
