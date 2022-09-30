@@ -102,31 +102,25 @@ namespace Ceres.Services
 
                 case LogSeverity.Error:
                     Console.ForegroundColor = ConsoleColor.Red;
-                    await Console.Out.WriteLineAsync(logText);
-                    Console.ForegroundColor = defaultForegroundColor;
-                    return;
+                    goto default;
 
                 case LogSeverity.Warning:
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    await Console.Out.WriteLineAsync(logText);
-                    Console.ForegroundColor = defaultForegroundColor;
-                    return;
+                    goto default;
 
                 case LogSeverity.Info:
                     Console.ForegroundColor = ConsoleColor.White;
-                    await Console.Out.WriteLineAsync(logText);
-                    Console.ForegroundColor = defaultForegroundColor;
-                    return;
+                    goto default;
 
                 case LogSeverity.Debug:
                     Console.ForegroundColor = ConsoleColor.Green;
-                    await Console.Out.WriteLineAsync(logText);
-                    Console.ForegroundColor = defaultForegroundColor;
-                    return;
+                    goto default;
 
                 case LogSeverity.Verbose:
-                default:
                     Console.ForegroundColor = ConsoleColor.DarkGray;
+                    goto default;
+
+                default:
                     await Console.Out.WriteLineAsync(logText);
                     Console.ForegroundColor = defaultForegroundColor;
                     return;
