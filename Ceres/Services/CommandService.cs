@@ -219,8 +219,8 @@ namespace Ceres.Services
                     case "fronthistory":
                     case "history":
 #if DEBUG
-                        ulong startTime = (ulong)((DateTimeOffset)DateTime.Now.AddDays(-7)).ToUnixTimeMilliseconds();
-                        ulong endTime = (ulong)((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds();
+                        long startTime = ((DateTimeOffset)DateTime.Now.AddDays(-7)).ToUnixTimeMilliseconds();
+                        long endTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds();
                         string frontHistory = await _fronterStatusMethods.GetFrontHistory(startTime, endTime);
                         await context.Channel.SendMessageAsync(text: frontHistory);
 #else
