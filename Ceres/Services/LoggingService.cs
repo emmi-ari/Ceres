@@ -70,7 +70,8 @@ namespace Ceres.Services
                     await Task.Delay(500);
                     await LogToFile(logText, true);
                 }
-                await LogToConsole(LogSeverity.Error, $"Can't access the log file.");
+                if (secondTry)
+                    await LogToConsole(LogSeverity.Error, $"Couldn't access the log file.");
             }
         }
 
