@@ -46,10 +46,14 @@ namespace Ceres.Services
 
         internal async Task OnLogAsync(LogMessage msg)
         {
+            string logString = msg.Message;
+            if (msg.Exception != null)
+                logString = GetExceptionStringForLog(msg.Exception);
+
 #if DEBUG
-            string logText = $"{DateTime.UtcNow:s} DBG [{msg.Severity}] [{msg.Source}] {msg.Exception?.ToString() ?? msg.Message}";
+            string logText = $"{DateTime.UtcNow:s} DBG [{msg.Severity}] [{msg.Source}] {logString}";
 #else
-            string logText = $"{DateTime.UtcNow:s} [{msg.Severity}] [{msg.Source}] {msg.Exception?.ToString() ?? msg.Message}";
+            string logText = $"{DateTime.UtcNow:s} [{msg.Severity}] [{msg.Source}] {logString}";
 #endif
             await LogToFile(logText);
             await LogToConsole(msg.Severity, logText);
