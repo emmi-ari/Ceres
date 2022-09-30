@@ -1,17 +1,11 @@
 ﻿using Newtonsoft.Json;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Ceres.Models
+namespace Ceres.Models.Apparyllis
 {
     internal class ApparyllisModel
     {
         [JsonProperty("response")]
-        internal ApparyllisResponseModel[] Apparyllis { get; init; }
+        internal ApparyllisResponseModel[] Response { get; init; }
     }
 
     internal class ApparyllisResponseModel
@@ -23,16 +17,16 @@ namespace Ceres.Models
         internal string Id { get; init; }
 
         [JsonProperty("content")]
-        internal ApparyllisContent Content { get; init; }
+        internal ApparyllisContentModel Content { get; init; }
     }
 
-    internal class ApparyllisContent
+    internal class ApparyllisContentModel
     {
         [JsonProperty("custom")]
         internal bool Custom { get; init; }
 
         [JsonProperty("startTime")]
-        internal ulong? StartTime { get; init; }
+        internal long? StartTime { get; init; }
 
         [JsonProperty("member")]
         internal string Member { get; init; }
@@ -41,12 +35,12 @@ namespace Ceres.Models
         internal bool Live { get; init; }
 
         [JsonProperty("endTime")]
-        internal ulong? EndTime { get; init; }
+        internal long? EndTime { get; init; }
 
         [JsonProperty("uid")]
         internal string Uid { get; init; }
 
         [JsonProperty("lastOperationTime")]
-        internal ulong? LastOperationTime { get; init; }
+        internal long? LastOperationTime { get; init; }
     }
 }

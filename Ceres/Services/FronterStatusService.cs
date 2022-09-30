@@ -1,4 +1,5 @@
 ﻿using Ceres.Models;
+using Ceres.Models.Apparyllis;
 
 using Discord;
 using Discord.WebSocket;
@@ -146,12 +147,12 @@ namespace Ceres.Services
         {
             if (responseSerialized == null) throw new ArgumentNullException(paramName: nameof(responseSerialized), string.Empty);
 
-            int fronterCount = responseSerialized.Apparyllis.Length;
+            int fronterCount = responseSerialized.Response.Length;
             List<FrontMemberInfos> serializedFronterList = new(fronterCount);
 
             for (int i = 0; i < fronterCount; i++)
             {
-                ApparyllisContent fronter = responseSerialized.Apparyllis[i]?.Content;
+                ApparyllisContentModel fronter = responseSerialized.Response[i]?.Content;
                 if (fronter is null)
                     continue;
 
@@ -161,7 +162,7 @@ namespace Ceres.Services
             return serializedFronterList;
         }
 
-        internal async Task<string> GetFrontHistory(ulong startTime, ulong endTime)
+        internal async Task<string> GetFrontHistory(long startTime, long endTime)
         {
             
             HttpResponseMessage frontHistoryResponse = await _request.GetAsync($"/v1/frontHistory/{_config["apparyllis.systemid"]}?startTime={startTime}&endTime={endTime}");
