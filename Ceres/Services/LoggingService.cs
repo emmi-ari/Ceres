@@ -87,6 +87,8 @@ namespace Ceres.Services
             switch (severity)
             {
                 case LogSeverity.Critical:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.BackgroundColor = ConsoleColor.White;
 #if WINDOWS
                     Console.Beep(2500, 150);
                     Console.Beep(2000, 100);
@@ -97,38 +99,37 @@ namespace Ceres.Services
 #else
                     Console.Beep();
 #endif
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.BackgroundColor = ConsoleColor.White;
                     await Console.Out.WriteLineAsync(logText);
-                    Console.ForegroundColor = defaultForegroundColor;
-                    Console.BackgroundColor = defaultBackgroundColor;
-                    return;
+                    break;
 
                 case LogSeverity.Error:
                     Console.ForegroundColor = ConsoleColor.Red;
-                    goto default;
-
-                case LogSeverity.Warning:
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    goto default;
-
-                case LogSeverity.Info:
-                    Console.ForegroundColor = ConsoleColor.White;
-                    goto default;
-
-                case LogSeverity.Debug:
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    goto default;
-
-                case LogSeverity.Verbose:
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    goto default;
-
-                default:
+                    goto default;                                   // ►──────┐
+                                                                    //        │
+                case LogSeverity.Warning:                           //        │
+                    Console.ForegroundColor = ConsoleColor.Yellow;  //        │
+                    goto default;                                   // ►─────┐│
+                                                                    //       ││
+                case LogSeverity.Info:                              //       ││
+                    Console.ForegroundColor = ConsoleColor.White;   //       ││
+                    goto default;                                   // ►────┐││
+                                                                    //      |││
+                case LogSeverity.Debug:                             //      |││
+                    Console.ForegroundColor = ConsoleColor.Green;   //      |││
+                    goto default;                                   // ►───┐│││
+                                                                    //     |│││
+                case LogSeverity.Verbose:                           //     |│││
+                    Console.ForegroundColor = ConsoleColor.DarkGray;//     |│││
+                    goto default;                                   // ►──┐││││
+                                                                    //    │││││
+                default:                                            //◄───┴┴┴┴┘
                     await Console.Out.WriteLineAsync(logText);
                     Console.ForegroundColor = defaultForegroundColor;
-                    return;
+                    break;
             }
+
+            Console.ForegroundColor = defaultForegroundColor;
+            Console.BackgroundColor = defaultBackgroundColor;
         }
 
         private string GetExceptionStringForLog(Exception exception)
