@@ -197,6 +197,15 @@ namespace Ceres.Services
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
             SocketCommandContext context = new(_discord, msg);
+            if (s.Embeds != null)
+            {
+                IReadOnlyCollection<Embed> msgEmbed = s.Embeds;
+                string embedDescription = msgEmbed?.FirstOrDefault()?.Description;
+                if (s.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
+                {
+                    await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
+                }
+            }
 
             int argPos = 0;
             if (msg.HasStringPrefix(_config["ceres.prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
