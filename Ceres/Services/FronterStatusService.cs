@@ -85,6 +85,7 @@ namespace Ceres.Services
             {
                 statusMessage = serializedFronterList.Count switch
                 {
+                    0 => "No fronter info for now",
                     1 => $"{serializedFronterList[0].MemberName} is fronting",
                     2 => $"{serializedFronterList[0].MemberName} and {serializedFronterList[1].MemberName} are fronting",
                     3 => $"{serializedFronterList[0].MemberName}, {serializedFronterList[1].MemberName} and {serializedFronterList[2].MemberName} are fronting",
@@ -110,11 +111,10 @@ namespace Ceres.Services
             
             HttpResponseMessage frontingStatusResponse = await _request.GetAsync("/v1/fronters/");
             string response = await frontingStatusResponse.Content.ReadAsStringAsync();
-            response = "{\"response\":" + response + "}";
+            response = "{\"response\":" + response + "}"; // Because why would an API give valid JSON as response, am I right?
 #else
             string responseSingularFronter = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}}";
             string responseMultipleFronters = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebc\",\"content\":{\"custom\":false,\"startTime\":1663611071274,\"member\":\"623ccab6820d5b982fb848b7\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611071264}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebd\",\"content\":{\"custom\":false,\"startTime\":1663611072458,\"member\":\"623cca89820d5b982fb848b6\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611072458}}";
-            // TODO response = response = "{\"response\":" + response + "}";
 
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(responseSingularFronter);
 #endif
@@ -130,11 +130,9 @@ namespace Ceres.Services
                 severity = LogSeverity.Warning;
 
             await _logger.OnLogAsync(new(severity, nameof(this.GetFrontStatusAsync), logMessage));
+#endif
 
             return serializedResponse;
-#else
-            return serializedResponse;
-#endif
         }
 
         private async Task<List<FrontMemberInfos>> GetFrontersList()
@@ -160,17 +158,6 @@ namespace Ceres.Services
             }
 
             return serializedFronterList;
-        }
-
-        internal async Task<string> GetFrontHistory(long startTime, long endTime)
-        {
-            
-            HttpResponseMessage frontHistoryResponse = await _request.GetAsync($"/v1/frontHistory/{_config["apparyllis.systemid"]}?startTime={startTime}&endTime={endTime}");
-            string response = await frontHistoryResponse.Content.ReadAsStringAsync();
-            response = "{\"response\":" + response + "}";
-            ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
-            List<FrontMemberInfos> info = ParseMembers(serializedResponse);
-            return response;
         }
     }
 }
