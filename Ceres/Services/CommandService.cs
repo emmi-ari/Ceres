@@ -11,7 +11,7 @@ namespace Ceres.Services
 {
     public class CommandsModule : ModuleBase<SocketCommandContext>
     {
-        LoggingService _log;
+        readonly LoggingService _log;
 
         public CommandsModule()
         {
@@ -110,13 +110,6 @@ namespace Ceres.Services
             return ReplyAsync("```ANSI\n[0;31mDid you mean: [4;34m/whoknows```");
         }
 
-        [Command("FrontHistory")]
-        [Alias("history")]
-        public Task FrontHistory()
-        {
-            return new Task(() => { });
-        }
-
         private Task CommandError(CeresCommand command, string errorMsg)
         {
             switch (command)
@@ -197,10 +190,11 @@ namespace Ceres.Services
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
             SocketCommandContext context = new(_discord, msg);
-            if (s.Embeds != null)
+            if (s.Embeds != null || s.Embeds.Count != 0)
             {
                 IReadOnlyCollection<Embed> msgEmbed = s.Embeds;
                 string embedDescription = msgEmbed?.FirstOrDefault()?.Description;
+                if (embedDescription is null) embedDescription = string.Empty;
                 if (s.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
                 {
                     await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
@@ -224,17 +218,6 @@ namespace Ceres.Services
                     case "uf":
                     case "u":
                         await _fronterStatusMethods.SetFronterStatusAsync();
-                        break;
-                    case "fronthistory":
-                    case "history":
-#if DEBUG
-                        long startTime = ((DateTimeOffset)DateTime.Now.AddDays(-7)).ToUnixTimeMilliseconds();
-                        long endTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds();
-                        string frontHistory = await _fronterStatusMethods.GetFrontHistory(startTime, endTime);
-                        await context.Channel.SendMessageAsync(text: frontHistory);
-#else
-                        context.Channel.SendMessageAsync("Error: FrontHistory is not implemented yet or Ceres is not running in debug mode");
-#endif
                         break;
                 }
 
