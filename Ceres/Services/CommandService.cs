@@ -89,18 +89,32 @@ namespace Ceres.Services
         [Alias("say")]
         public Task Say(string msg, ulong channelId = 0ul, ulong guildId = 0ul, ulong replyToMsgID = 0ul)
         {
+            #region Guild ID parsing
             if (guildId == 0)
                 guildId = Context.Guild.Id;
+            SocketGuild guild = Context.Client.GetGuild(guildId);
+            if (guild == null)
+                return Context.Channel.SendMessageAsync("Invalid Guild ID");
+            #endregion
+
+            #region Channel ID parsing
             if (channelId == 0)
                 channelId = Context.Channel.Id;
+            IMessageChannel messageChannel = guild.GetChannel(channelId) as IMessageChannel;
+            if (messageChannel == null)
+                return Context.Channel.SendMessageAsync("Invalid Channel ID");
+            #endregion
 
-            SocketGuild guild = Context.Client.GetGuild(guildId);
-            IMessageChannel channel = guild.GetChannel(channelId) as IMessageChannel;
+            #region Message ID parsing
+            IMessage replyMessage = Task.Run(async () => { return await messageChannel.GetMessageAsync(replyToMsgID); }).Result;
+            if (replyMessage == null)
+                return Context.Channel.SendMessageAsync("Invalid Message ID");
             MessageReference reference = new(replyToMsgID, channelId, guildId, true);
+            #endregion
 
             return (ulong)reference.MessageId == 0
-                ? channel.SendMessageAsync(msg)
-                : channel.SendMessageAsync(msg, messageReference: reference);
+                ? messageChannel.SendMessageAsync(msg)
+                : messageChannel.SendMessageAsync(msg, messageReference: reference);
         }
 
         [Command("whoknows")]
