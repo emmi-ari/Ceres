@@ -2,6 +2,8 @@
 using Discord.Commands;
 using Discord.WebSocket;
 
+using System.Text;
+
 namespace Ceres.Services
 {
 #pragma warning disable CA1822
@@ -9,6 +11,10 @@ namespace Ceres.Services
     {
         private readonly DiscordSocketClient _discord;
         private readonly CommandService _commands;
+        /// <summary>
+        /// New line
+        /// </summary>
+        private readonly string _nl = Environment.NewLine;
 
         private string LogDirectory { get; init; }
         private readonly string _logFilePath;
@@ -46,9 +52,9 @@ namespace Ceres.Services
 
         internal async Task OnLogAsync(LogMessage msg)
         {
-            string logString = msg.Message;
+            StringBuilder logString = new(msg.Message);
             if (msg.Exception != null)
-                logString = GetExceptionStringForLog(msg.Exception);
+                logString.Append(_nl + GetExceptionStringForLog(msg.Exception));
 
 #if DEBUG
             string logText = $"{DateTime.UtcNow:s} DBG [{msg.Severity}] [{msg.Source}] {logString}";
@@ -64,8 +70,8 @@ namespace Ceres.Services
             try
             {
                 using FileStream file = new(_logFilePath, FileMode.Append, FileAccess.Write);
-                using StreamWriter sw = new(file, System.Text.Encoding.UTF8);
-                await sw.WriteAsync(logText + Environment.NewLine);
+                using StreamWriter sw = new(file, Encoding.UTF8);
+                await sw.WriteAsync(logText + _nl);
             }
             catch (Exception)
             {
@@ -137,34 +143,34 @@ namespace Ceres.Services
             if (exception == null)
                 throw new ArgumentNullException(nameof(exception));
 
-            List<string> messages = new()
-            {
-                $"{exception.Message} (0x{exception.HResult:X8})",
-                string.IsNullOrWhiteSpace(exception.StackTrace) ? null : exception.StackTrace + Environment.NewLine
-            };
+            StringBuilder messages = new(
+                    $"{exception.Message} (0x{exception.HResult:X8})" + _nl +
+                    (string.IsNullOrWhiteSpace(exception.StackTrace) ? null : exception.StackTrace + _nl)
+                );
 
             if (exception.InnerException != null)
             {
                 Exception inner = exception.InnerException;
                 while (inner != null)
                 {
-                    messages.Add($"{inner.Message} (0x{inner.HResult:X8})");
-                    messages.Add(inner.StackTrace);
+                    messages.Append($"{inner.Message} (0x{inner.HResult:X8})" + _nl);
+                    messages.Append(inner.StackTrace + _nl);
                     inner = inner.InnerException;
                 }
             }
 
-            string endErrorMessage = null;
-            foreach (string line in messages)
+            StringBuilder endErrorMessage = new();
+            string[] msgArray = messages.ToString().Split(_nl);
+            foreach (string line in msgArray)
             {
-                endErrorMessage += line + Environment.NewLine;
+                endErrorMessage.Append(line + _nl);
             }
 
-            endErrorMessage += $"{new('=', (Console.WindowWidth / 2) - 9)} End of exception {new('=', (Console.WindowWidth / 2) - 10)}" + Environment.NewLine;
-            endErrorMessage += $"Exception was of type {exception.GetType()}" + Environment.NewLine;
-            endErrorMessage += $"{new('=', Console.WindowWidth - 1)}";
+            endErrorMessage.Append($"{new('=', (Console.WindowWidth / 2) - 9)} End of exception {new('=', (Console.WindowWidth / 2) - 10)}" + _nl);
+            endErrorMessage.Append($"Exception was of type {exception.GetType()}" + _nl);
+            endErrorMessage.Append($"{new('=', Console.WindowWidth - 1)}");
 
-            return endErrorMessage;
+            return endErrorMessage.ToString();
         }
     }
 #pragma warning restore CA1822
