@@ -100,8 +100,7 @@ namespace Ceres.Services
             #region Channel ID parsing
             if (channelId == 0)
                 channelId = Context.Channel.Id;
-            IMessageChannel messageChannel = guild.GetChannel(channelId) as IMessageChannel;
-            if (messageChannel == null)
+            if (guild.GetChannel(channelId) is not IMessageChannel messageChannel) // Null check
                 return Context.Channel.SendMessageAsync("Invalid Channel ID");
             #endregion
 
@@ -204,16 +203,18 @@ namespace Ceres.Services
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
             SocketCommandContext context = new(_discord, msg);
+            #region Reminder emphasizer
             if (s.Embeds != null || s.Embeds.Count != 0)
             {
                 IReadOnlyCollection<Embed> msgEmbed = s.Embeds;
                 string embedDescription = msgEmbed?.FirstOrDefault()?.Description;
-                if (embedDescription is null) embedDescription = string.Empty;
+                embedDescription ??= string.Empty;
                 if (s.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
                 {
                     await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
                 }
             }
+            #endregion
 
             int argPos = 0;
             if (msg.HasStringPrefix(_config["ceres.prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
