@@ -35,7 +35,7 @@ namespace Ceres.Services
         }
 
         [Command("egg")]
-        [Alias("ei")]
+        [Alias("ei", "eckeaberaufhessisch")]
         [Summary("egg (engl. \"Ei\"")]
         public Task Egg()
         {
@@ -203,6 +203,8 @@ namespace Ceres.Services
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
             SocketCommandContext context = new(_discord, msg);
+            int argPos = 0;
+
             #region Reminder emphasizer
             if (s.Embeds != null || s.Embeds.Count != 0)
             {
@@ -216,7 +218,6 @@ namespace Ceres.Services
             }
             #endregion
 
-            int argPos = 0;
             if (msg.HasStringPrefix(_config["ceres.prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
                 string commandWithoutPrefix = msg.Content.Replace(_config["ceres.prefix"], string.Empty).Trim();
