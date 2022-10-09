@@ -54,7 +54,7 @@ namespace Ceres.Services
         {
             StringBuilder logString = new(msg.Message);
             if (msg.Exception != null)
-                logString.Append(_nl + GetExceptionStringForLog(msg.Exception));
+                logString.Append(GetExceptionStringForLog(msg.Exception));
 
 #if DEBUG
             string logText = $"{DateTime.UtcNow:s} DBG [{msg.Severity}] [{msg.Source}] {logString}";
