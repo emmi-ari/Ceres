@@ -67,10 +67,10 @@ namespace Ceres
             .AddSingleton<CommandHandler>()
             .AddSingleton<StartupService>()
             .AddSingleton<FronterStatusService>()
-            .AddSingleton<Random>()
             .AddSingleton(Configuration);
         }
 
+#if !DEBUG
         private LogSeverity GetLogSeverity()
         {
             return Configuration["ceres.log_level"].ToUpper() switch
@@ -83,5 +83,6 @@ namespace Ceres
                 _ => LogSeverity.Verbose,
             };
         }
+#endif
     }
 }
