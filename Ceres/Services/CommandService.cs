@@ -16,7 +16,6 @@ namespace Ceres.Services
         private readonly IConfigurationRoot _config;
         private readonly IServiceProvider _provider;
 
-
         public CommandHandler(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
         {
             _discord = discord;
@@ -32,7 +31,8 @@ namespace Ceres.Services
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
             SocketCommandContext context = new(_discord, msg);
-            int argPos = 0;
+            string prefix = _config["ceres.prefix"];
+            int prefixLength = 0;
 
             #region Reminder emphasizer
             if (s.Embeds != null || s.Embeds.Count != 0)
@@ -47,13 +47,13 @@ namespace Ceres.Services
             }
             #endregion
 
-            if (msg.HasStringPrefix(_config["ceres.prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
+            if (msg.HasStringPrefix(prefix, ref prefixLength) || msg.HasMentionPrefix(_discord.CurrentUser, ref prefixLength))
             {
-                string commandWithoutPrefix = msg.Content.Replace(_config["ceres.prefix"], string.Empty).Trim();
+                string commandWithoutPrefix = msg.Content.Replace(prefix, string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(commandWithoutPrefix))
                     return;
 
-                IResult result = _commands.ExecuteAsync(context, argPos, _provider).Result;
+                IResult result = _commands.ExecuteAsync(context, prefixLength, _provider).Result;
 
                 if (!result.IsSuccess)
                     await context.Channel.SendMessageAsync(result.ToString());
@@ -119,14 +119,8 @@ namespace Ceres.Services
                 {
                     bool channelValid = ulong.TryParse(messageId, out ulong messageIdUlong);
                     msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync(messageIdUlong); }).Result;
-                    if (msg == null)
-                    {
-                        return CommandError(CeresCommand.AddReaction, "Error: **Command must be executed in the same channel**");
-                    }
-                    if (!channelValid)
-                    {
-                        return CommandError(CeresCommand.AddReaction, "Error: **Something's wrong with the message ID**");
-                    }
+                    if (msg == null) return CommandError(CeresCommand.AddReaction, "Error: **Command must be executed in the same channel**");
+                    if (!channelValid) return CommandError(CeresCommand.AddReaction, "Error: **Something's wrong with the message ID**");
                 }
                 else
                 {
@@ -199,12 +193,24 @@ namespace Ceres.Services
             public Task Folder()
             {
                 Task.Run(async () => { await Context.Message.AddReactionAsync(_waitEmote); });
-                FileInfo[] folderFiles = _folderDir.GetFiles();
-                folderFiles = folderFiles.Where(x => x.Name != "ei.png").ToArray();
-                int r = _unsafeRng.Next(0, folderFiles.Length);
-                return Context.Channel.SendFileAsync(
-                    filePath: folderFiles[r].FullName,
-                    text: folderFiles[r].Name == "redditsave.com_german_spongebob_is_kinda_weird-vrm48d21ch081.mp4" ? "CW Laut" : string.Empty);
+                FileInfo[] folderFiles = _folderDir.GetFiles()
+                                                   .Where(file => file.Name != "ei.png" || !(file.Attributes.HasFlag(FileAttributes.System) || file.Attributes.HasFlag(FileAttributes.Directory)))
+                                                   .ToArray();
+                int rand = _unsafeRng.Next(0, folderFiles.Length);
+                string filePath = folderFiles[rand].FullName;
+                string text= filePath switch
+                {
+                    "redditsave.com_german_spongebob_is_kinda_weird-vrm48d21ch081.mp4"
+                        => "CW Laut",
+                    "brr_uzi.mp4"
+                        => "CW Laut",
+                    "Discord_become_hurensohn2.png"
+                        => "Credits: Aurora",
+                    _ // default
+                        => string.Empty
+                };
+
+                return Context.Channel.SendFileAsync(filePath, text);
             }
 
             private Task CommandError(CeresCommand command, string errorMsg)
@@ -222,6 +228,7 @@ namespace Ceres.Services
 
             protected override async Task BeforeExecuteAsync(CommandInfo command)
             {
+                await Context.Message.AddReactionAsync(_waitEmote);
                 LogMessage log = new(LogSeverity.Info, command.Name, $"{Context.User.Username}#{Context.User.Discriminator} used a command in #{Context.Channel.Name}");
                 await _logger.OnLogAsync(log);
                 await base.BeforeExecuteAsync(command);
