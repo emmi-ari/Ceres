@@ -33,7 +33,7 @@ namespace Ceres.Services
             await _discord.LoginAsync(TokenType.Bot, discordToken);
             await _discord.StartAsync();
 
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider); // Load commands and modules into the command service
         }
     }
 }

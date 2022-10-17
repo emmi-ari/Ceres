@@ -123,9 +123,7 @@ namespace Ceres.Services
             string logMessage = $"Recieved response from apparyllis server: {frontingStatusResponse.StatusCode}";
             LogSeverity severity = LogSeverity.Info;
             if (frontingStatusResponse.IsSuccessStatusCode)
-            {
                 logMessage += $" ({response.Length} bytes)";
-            }
             else
                 severity = LogSeverity.Warning;
 
