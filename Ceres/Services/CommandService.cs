@@ -192,7 +192,6 @@ namespace Ceres.Services
             [Alias("f")]
             public Task Folder()
             {
-                Task.Run(async () => { await Context.Message.AddReactionAsync(_waitEmote); });
                 FileInfo[] folderFiles = _folderDir.GetFiles()
                                                    .Where(file => file.Name != "ei.png" || !(file.Attributes.HasFlag(FileAttributes.System) || file.Attributes.HasFlag(FileAttributes.Directory)))
                                                    .ToArray();
