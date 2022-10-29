@@ -1,8 +1,12 @@
+﻿using Ceres.Models.Apparyllis;
+
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
+
+using Newtonsoft.Json;
 
 // (\#if )(DEBUG|RELEASE)
 // $1!$2F
@@ -23,6 +27,30 @@ namespace Ceres.Services
             _config = config;
             _provider = provider;
             _discord.MessageReceived += OnMessageReceivedAsync;
+            _discord.ReactionAdded += OnReactionAdded;
+        }
+
+        private Task OnReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
+        {
+            if (arg3.Emote is not Emote || arg3.UserId == 233018119856062466) return Task.CompletedTask;
+
+            Emote reactionEmote = (Emote)arg3.Emote;
+            switch (reactionEmote.Id)
+            {
+                case 1034143711195582554:
+                case 1034143897271676959:
+                case 1034143902548107365:
+                case 1034143907690332251:
+                case 1034143824433401877:
+                case 1034143757815271534:
+                case 1034143913524600864:
+                case 1034143781643108382:
+                    IMessage reactedMessage = Task.Run(async () => { return await arg2.Value.GetMessageAsync(arg3.MessageId); }).Result;
+                    return reactedMessage.RemoveReactionAsync(reactionEmote, arg3.UserId);
+
+                default:
+                    return Task.CompletedTask;
+            }
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -149,7 +177,7 @@ namespace Ceres.Services
 
             [Command("echo")]
             [Alias("say")]
-            public Task Say(string msg, ulong channelId = 0ul, ulong guildId = 0ul, ulong replyToMsgID = 0ul)
+            public Task Say(string msg, ulong channelId = 0ul, ulong guildId = 0ul, ulong replyToMsgID = 0ul, string delete = "")
             {
                 #region Guild ID parsing
                 if (guildId == 0ul)
