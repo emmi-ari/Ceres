@@ -1,6 +1,6 @@
 ﻿using Ceres.Models.Apparyllis;
 
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
@@ -99,6 +99,7 @@ namespace Ceres.Services
             private readonly DirectoryInfo _folderDir;
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
+            private readonly HttpClient _weatherStackApi;
 
             public CommandsCollection(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
@@ -110,6 +111,12 @@ namespace Ceres.Services
                 _logger = new();
                 _folderDir = new(config["ceres.foldercommandpath"]);
                 _unsafeRng = new();
+                HttpClient weatherStackApi = new()
+                {
+                    BaseAddress = new("http://api.weatherstack.com/")
+                };
+                weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                _weatherStackApi = weatherStackApi;
             }
 
             enum CeresCommand
@@ -240,6 +247,24 @@ namespace Ceres.Services
                 return Context.Channel.SendFileAsync(filePath, text);
             }
 
+            [Command("weather")]
+            [Alias("wetter", "w")]
+            public Task Weather(string place, int forecastDays = 0)
+            {
+                return Task.CompletedTask;
+                if (string.IsNullOrEmpty(place))
+                    throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
+
+                HttpResponseMessage response = Task.Run(async () => { 
+                    return await _weatherStackApi.GetAsync($"forecast?access_key={_config["weatherstack.token"]}&query={place}");
+                }).Result;
+                string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
+
+                WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
+
+                return Task.CompletedTask;
+            }
+
             private Task CommandError(CeresCommand command, string errorMsg)
             {
                 switch (command)
@@ -256,8 +281,10 @@ namespace Ceres.Services
             protected override async Task BeforeExecuteAsync(CommandInfo command)
             {
                 await Context.Message.AddReactionAsync(_waitEmote);
+                
                 LogMessage log = new(LogSeverity.Info, command.Name, $"{Context.User.Username}#{Context.User.Discriminator} used a command in #{Context.Channel.Name}");
                 await _logger.OnLogAsync(log);
+
                 await base.BeforeExecuteAsync(command);
             }
 
