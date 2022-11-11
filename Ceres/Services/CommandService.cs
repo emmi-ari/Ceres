@@ -280,24 +280,21 @@ namespace Ceres.Services
                 // Download emote
                 using HttpClient client = new();
                 using Stream stream = Task.Run(async () => { return await client.GetStreamAsync(emoteUrl); }).Result;
+                using Stream file = File.Create($"{emoteName}.gif");
+                stream.CopyTo(file);
+                stream.Close();
+                file.Close();
 
-                if (emoteIsAnimated)
-                {
-                    using Stream file = File.Create($"{emoteName}.gif");
-                    stream.CopyTo(file);
-                    stream.Close();
-                    file.Close();
-                }
-                else
+                if (!emoteIsAnimated)
                 {
                     using Process ffmpeg = new();
                     ffmpeg.StartInfo.FileName = "ffmpeg";
-                    ffmpeg.StartInfo.Arguments = @$"-i {emoteUrl} -vf palettegen=reserve_transparent=1 palette.png"; // Create pallet
+                    ffmpeg.StartInfo.Arguments = @$"-i {emoteName} -vf palettegen=reserve_transparent=1 palette.png"; // Create pallet
                     ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                     ffmpeg.Start();
                     ffmpeg.WaitForExit();
 
-                    ffmpeg.StartInfo.Arguments = @$"-i {emoteUrl} -i .\palette.png -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
+                    ffmpeg.StartInfo.Arguments = @$"-i {emoteName} -i .\palette.png -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
                     ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                     ffmpeg.Start();
                     ffmpeg.WaitForExit();
