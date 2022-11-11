@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json;
 
+using System.Diagnostics;
+
 // (\#if )(DEBUG|RELEASE)
 // $1!$2F
 
@@ -32,6 +34,7 @@ namespace Ceres.Services
 
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
         {
+            #region Restrict others from using these reaction emotes
             if (arg3.Emote is not Emote || arg3.UserId == 233018119856062466) return Task.CompletedTask;
 
             Emote reactionEmote = (Emote)arg3.Emote;
@@ -51,6 +54,7 @@ namespace Ceres.Services
                 default:
                     return Task.CompletedTask;
             }
+            #endregion
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -232,7 +236,7 @@ namespace Ceres.Services
                                                    .ToArray();
                 int rand = _unsafeRng.Next(0, folderFiles.Length);
                 string filePath = folderFiles[rand].FullName;
-                string text= filePath switch
+                string text = filePath switch
                 {
                     "redditsave.com_german_spongebob_is_kinda_weird-vrm48d21ch081.mp4"
                         => "CW Laut",
@@ -247,15 +251,77 @@ namespace Ceres.Services
                 return Context.Channel.SendFileAsync(filePath, text);
             }
 
+            [Command("EmoteToGif")]
+            [Alias("Emote", "Gif", "FuckNitro")]
+            public Task EmoteToGif(string providedEmoteName)
+            {
+                IReadOnlyCollection<GuildEmote> serverEmotes = Context.Guild.Emotes;
+                List<GuildEmote> matchedEmotes = new();
+
+                foreach (GuildEmote emote in serverEmotes)
+                {
+                    if (emote.Name.ToLower().StartsWith(providedEmoteName.ToLower())) matchedEmotes.Add(emote);
+                }
+
+                if (matchedEmotes.Count > 1)
+                {
+                    string matchedEmotesNames = string.Empty;
+                    matchedEmotes.ForEach(emote => matchedEmotesNames += $"{emote.Name}, ");
+                    matchedEmotesNames = matchedEmotesNames.TrimEnd().TrimEnd(',');
+                    return ReplyAsync($"Multiple emotes matches your input: `{matchedEmotesNames}`");
+                }
+                else if (matchedEmotes.Count == 0)
+                    return ReplyAsync($"No emotes found that match {providedEmoteName}");
+
+                string emoteUrl = matchedEmotes[0].Url;
+                string emoteName = matchedEmotes[0].Name;
+                bool emoteIsAnimated = matchedEmotes[0].Animated;
+
+                // Download emote
+                using HttpClient client = new();
+                using Stream stream = Task.Run(async () => { return await client.GetStreamAsync(emoteUrl); }).Result;
+
+                if (emoteIsAnimated)
+                {
+                    using Stream file = File.Create($"{emoteName}.gif");
+                    stream.CopyTo(file);
+                    stream.Close();
+                    file.Close();
+                }
+                else
+                {
+                    using Process ffmpeg = new();
+                    ffmpeg.StartInfo.FileName = "ffmpeg";
+                    ffmpeg.StartInfo.Arguments = @$"-i {emoteUrl} -vf palettegen=reserve_transparent=1 palette.png"; // Create pallet
+                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    ffmpeg.Start();
+                    ffmpeg.WaitForExit();
+
+                    ffmpeg.StartInfo.Arguments = @$"-i {emoteUrl} -i .\palette.png -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
+                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    ffmpeg.Start();
+                    ffmpeg.WaitForExit();
+
+                    ffmpeg.StartInfo.Arguments = @$"-i .\{emoteName}.gif -vf scale=-1:48 -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
+                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    ffmpeg.Start();
+                    ffmpeg.WaitForExit();
+                    ffmpeg.Close();
+                }
+
+                return Context.Channel.SendFileAsync($"{emoteName}.gif");
+            }
+
             [Command("weather")]
             [Alias("wetter", "w")]
             public Task Weather(string place, int forecastDays = 0)
             {
-                return Task.CompletedTask;
+                return ReplyAsync("Not implemented.");
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
 
-                HttpResponseMessage response = Task.Run(async () => { 
+                HttpResponseMessage response = Task.Run(async () =>
+                {
                     return await _weatherStackApi.GetAsync($"forecast?access_key={_config["weatherstack.token"]}&query={place}");
                 }).Result;
                 string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
@@ -281,7 +347,7 @@ namespace Ceres.Services
             protected override async Task BeforeExecuteAsync(CommandInfo command)
             {
                 await Context.Message.AddReactionAsync(_waitEmote);
-                
+
                 LogMessage log = new(LogSeverity.Info, command.Name, $"{Context.User.Username}#{Context.User.Discriminator} used a command in #{Context.Channel.Name}");
                 await _logger.OnLogAsync(log);
 
@@ -290,6 +356,14 @@ namespace Ceres.Services
 
             protected override async Task AfterExecuteAsync(CommandInfo command)
             {
+                if (command.Name == "EmoteToGif")
+                {
+                    foreach (string sFile in Directory.GetFiles(AppContext.BaseDirectory, "*.gif"))
+                    {
+                        File.Delete(sFile);
+                    }
+                    File.Delete("palette.png");
+                }
                 await Context.Message.RemoveReactionAsync(_waitEmote, 966325392707301416);
                 await base.AfterExecuteAsync(command);
             }
