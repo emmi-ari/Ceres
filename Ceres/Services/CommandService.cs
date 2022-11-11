@@ -1,12 +1,8 @@
-﻿using Ceres.Models.Apparyllis;
-
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
-
-using Newtonsoft.Json;
 
 using System.Diagnostics;
 
@@ -253,8 +249,70 @@ namespace Ceres.Services
 
             [Command("EmoteToGif")]
             [Alias("Emote", "Gif", "FuckNitro")]
-            public Task EmoteToGif(string providedEmoteName)
+            public Task EmoteToGif(string providedEmoteName = "")
             {
+                #region Local function(s)
+                static void ConvertEmoteToGif(string emoteUrl, string emoteName, bool emoteIsAnimated)
+                {
+                    // Download emote
+                    HttpClient client = new();
+                    Stream stream = Task.Run(async () => { return await client.GetStreamAsync(emoteUrl); }).Result;
+                    Stream file = File.Create($"{emoteName}.gif");
+                    stream.CopyTo(file);
+                    stream.Dispose();
+                    file.Dispose();
+
+                    if (!emoteIsAnimated)
+                    {
+                        using Process ffmpeg = new();
+                        ffmpeg.StartInfo.FileName = "ffmpeg";
+                        ffmpeg.StartInfo.Arguments = @$"-i {emoteName} -vf palettegen=reserve_transparent=1 palette.png"; // Create pallet
+                        ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        ffmpeg.Start();
+                        ffmpeg.WaitForExit();
+
+                        ffmpeg.StartInfo.Arguments = @$"-i {emoteName} -i .\palette.png -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
+                        ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        ffmpeg.Start();
+                        ffmpeg.WaitForExit();
+
+                        ffmpeg.StartInfo.Arguments = @$"-i .\{emoteName}.gif -vf scale=-1:48 -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
+                        ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        ffmpeg.Start();
+                        ffmpeg.WaitForExit();
+                        ffmpeg.Dispose();
+                    }
+                }
+                #endregion
+
+                if (Context.Message.Reference is not null)
+                {
+                    IMessage msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId); }).Result;
+                    ITag[] emotesInMessage = msg.Tags.Where(tag => tag.Type == TagType.Emoji).ToArray();
+                    List<string> emoteNames = new(emotesInMessage.Length);
+                    foreach (ITag tag in emotesInMessage)
+                    {
+                        Emote emote = tag.Value as Emote;
+                        emoteNames.Add($"{emote.Name}.gif");
+                        ConvertEmoteToGif(emote.Url, emote.Name, emote.Animated);
+                    }
+
+                    return Task.Run(() =>
+                    {
+                        List<FileAttachment> attachments = new(emotesInMessage.Length);
+
+                        foreach (string fileName in emoteNames)
+                        {
+                            FileAttachment attachment = new(fileName);
+                            attachments.Add(attachment);
+                        }
+
+                        foreach (ITag tag in emotesInMessage)
+                        {
+                            Context.Channel.SendFilesAsync(attachments);
+                        }
+                    });
+                }
                 IReadOnlyCollection<GuildEmote> serverEmotes = Context.Guild.Emotes;
                 List<GuildEmote> matchedEmotes = new();
 
@@ -277,34 +335,7 @@ namespace Ceres.Services
                 string emoteName = matchedEmotes[0].Name;
                 bool emoteIsAnimated = matchedEmotes[0].Animated;
 
-                // Download emote
-                using HttpClient client = new();
-                using Stream stream = Task.Run(async () => { return await client.GetStreamAsync(emoteUrl); }).Result;
-                using Stream file = File.Create($"{emoteName}.gif");
-                stream.CopyTo(file);
-                stream.Close();
-                file.Close();
-
-                if (!emoteIsAnimated)
-                {
-                    using Process ffmpeg = new();
-                    ffmpeg.StartInfo.FileName = "ffmpeg";
-                    ffmpeg.StartInfo.Arguments = @$"-i {emoteName} -vf palettegen=reserve_transparent=1 palette.png"; // Create pallet
-                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    ffmpeg.Start();
-                    ffmpeg.WaitForExit();
-
-                    ffmpeg.StartInfo.Arguments = @$"-i {emoteName} -i .\palette.png -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
-                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    ffmpeg.Start();
-                    ffmpeg.WaitForExit();
-
-                    ffmpeg.StartInfo.Arguments = @$"-i .\{emoteName}.gif -vf scale=-1:48 -lavfi paletteuse=alpha_threshold=64 -gifflags -offsetting {emoteName}.gif"; // Actual gif conversion
-                    ffmpeg.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    ffmpeg.Start();
-                    ffmpeg.WaitForExit();
-                    ffmpeg.Close();
-                }
+                ConvertEmoteToGif(emoteUrl, emoteName, emoteIsAnimated);
 
                 return Context.Channel.SendFileAsync($"{emoteName}.gif");
             }
