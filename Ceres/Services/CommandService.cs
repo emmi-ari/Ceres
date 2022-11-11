@@ -103,7 +103,7 @@ namespace Ceres.Services
             private readonly DirectoryInfo _folderDir;
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
-            private readonly HttpClient _weatherStackApi;
+            //private readonly HttpClient _weatherStackApi;
 
             public CommandsCollection(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
@@ -115,12 +115,12 @@ namespace Ceres.Services
                 _logger = new();
                 _folderDir = new(config["ceres.foldercommandpath"]);
                 _unsafeRng = new();
-                HttpClient weatherStackApi = new()
-                {
-                    BaseAddress = new("http://api.weatherstack.com/")
-                };
-                weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-                _weatherStackApi = weatherStackApi;
+                //HttpClient weatherStackApi = new()
+                //{
+                //    BaseAddress = new("http://api.weatherstack.com/")
+                //};
+                //weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                //_weatherStackApi = weatherStackApi;
             }
 
             enum CeresCommand
@@ -314,6 +314,7 @@ namespace Ceres.Services
             public Task Weather(string place, int forecastDays = 0)
             {
                 return ReplyAsync("Not implemented.");
+                /*
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
 
@@ -326,6 +327,7 @@ namespace Ceres.Services
                 WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
 
                 return Task.CompletedTask;
+                */
             }
 
             private Task CommandError(CeresCommand command, string errorMsg)
