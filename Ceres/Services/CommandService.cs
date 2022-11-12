@@ -199,7 +199,7 @@ namespace Ceres.Services
 
             [Command("echo")]
             [Alias("say")]
-            public Task Say(string msg, ulong guildId = 0ul, ulong channelId = 0ul,  ulong replyToMsgID = 0ul)
+            public Task Say(string msg, ulong guildId = 0ul, ulong channelId = 0ul, ulong replyToMsgID = 0ul)
             {
                 #region Guild ID parsing
                 if (guildId == 0ul)
