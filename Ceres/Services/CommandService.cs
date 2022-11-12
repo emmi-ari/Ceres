@@ -1,10 +1,15 @@
-﻿using Discord;
+﻿using Ceres.Models.Apparyllis;
+
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
 
+using Newtonsoft.Json;
+
 using System.Diagnostics;
+using System.Text;
 
 // (\#if )(DEBUG|RELEASE)
 // $1!$2F
@@ -114,7 +119,7 @@ namespace Ceres.Services
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
             private readonly MessageReference _messageReference;
-            //private readonly HttpClient _weatherStackApi;
+            private readonly HttpClient _weatherStackApi;
 
             public CommandsCollection(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
@@ -126,12 +131,12 @@ namespace Ceres.Services
                 _logger = new();
                 _folderDir = new(config["ceres.foldercommandpath"]);
                 _unsafeRng = new();
-                //HttpClient weatherStackApi = new()
-                //{
-                //    BaseAddress = new("http://api.weatherstack.com/")
-                //};
-                //weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-                //_weatherStackApi = weatherStackApi;
+                HttpClient weatherStackApi = new()
+                {
+                    BaseAddress = new("http://api.weatherstack.com/")
+                };
+                weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                _weatherStackApi = weatherStackApi;
             }
 
             enum CeresCommand
@@ -299,7 +304,7 @@ namespace Ceres.Services
                     }
                 }
                 #endregion
-                
+
                 if (providedEmoteName == string.Empty)
                 {
                     IMessage msg = Context.Message.Reference is not null
@@ -360,10 +365,49 @@ namespace Ceres.Services
 
             [Command("weather")]
             [Alias("wetter", "w")]
-            public Task Weather(string place, int forecastDays = 0)
+            public Task Weather(string place)
             {
-                return ReplyAsync("Not implemented.");
-                /*
+                #region Local function(s)
+                static List<EmbedFieldBuilder> GetEmbedFields(WeatherStackModel serializedResponse)
+                {
+                    List<EmbedFieldBuilder> returnValue = new(5);
+                    EmbedFieldBuilder cloudCover = new()
+                    {
+                        Name = "Bedeckung",
+                        Value = $"{serializedResponse.Current.Cloudcover} %"
+                    };
+                    EmbedFieldBuilder feelsLike = new()
+                    {
+                        Name = "Feels like",
+                        Value = $"{serializedResponse.Current.Feelslike} °C"
+                    };
+                    EmbedFieldBuilder observationTime = new()
+                    {
+                        Name = "Uhrzeit",
+                        Value = $"{serializedResponse.Current.ObservationTime}"
+                    };
+                    EmbedFieldBuilder precip = new()
+                    {
+                        Name = "Niederschlagswahrscheinlichkeit",
+                        Value = $"{serializedResponse.Current.Precip} %"
+                    };
+                    EmbedFieldBuilder uvIndex = new()
+                    {
+                        Name = "UV Index",
+                        Value = $"{serializedResponse.Current.UvIndex}"
+                    };
+                    returnValue.Add(feelsLike);
+                    returnValue.Add(precip);
+                    returnValue.Add(cloudCover);
+                    returnValue.Add(uvIndex);
+                    returnValue.Add(observationTime);
+                    return returnValue;
+                }
+                #endregion
+
+                if (place == "frankfurt".ToLower() && Context.User.Id == 346295434546774016)
+                    place = "Frankfurt an der Oder";
+
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
 
@@ -371,12 +415,57 @@ namespace Ceres.Services
                 {
                     return await _weatherStackApi.GetAsync($"forecast?access_key={_config["weatherstack.token"]}&query={place}");
                 }).Result;
+
                 string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
-
                 WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
+                string location = place.ToLower() == "frankfurt" ? "Frankfurt am Main" : serializedResponse.Location.Name;
 
-                return Task.CompletedTask;
-                */
+                EmbedBuilder embed = new()
+                {
+                    Title = $"Wetter für {location}, {serializedResponse.Location.Region}, {serializedResponse.Location.Country}",
+                    Color = Color.DarkBlue,
+                    Fields = GetEmbedFields(serializedResponse),
+                    ThumbnailUrl = serializedResponse.Current.WeatherIcons[0],
+                    Description = $"__{serializedResponse.Current.WeatherDescriptions[0]} {serializedResponse.Current.Temperature} °C__\n\n" +
+                    $"**Luftdruck:** {serializedResponse.Current.Pressure} HPa\n" +
+                    $"**Wind:** {serializedResponse.Current.WindSpeed} km/h **Richtung:** {ParseWindDirection(serializedResponse.Current.WindDir)} ({serializedResponse.Current.WindDegree} °)\n" +
+                    $"**Relative Luftfeuchte:** {serializedResponse.Current.Humidity} %",
+                    Footer = new()
+                    {
+                        Text = $"Data provided by WheatherStack API",
+                        IconUrl = "https://rapidapi-prod-apis.s3.amazonaws.com/c2139e70-bb7e-4aaa-81e9-b8f70cdb77d4.png"
+                    }
+                };
+
+                return ReplyAsync(embed: embed.Build());
+            }
+
+            private string ParseWindDirection(string abbreviation)
+            {
+                if (abbreviation.Length > 3)
+                    throw new ArgumentException($"{nameof(abbreviation)} can not contain less than 1 or more than 3 chars");
+
+                StringBuilder parsedWindDirection = new(4, 15);
+
+                for (int i = 0; i < abbreviation.Length; i++)
+                {
+                    switch (abbreviation[i])
+                    {
+                        case 'N':
+                            parsedWindDirection.Append("Nord-");
+                            break;
+                        case 'E':
+                            parsedWindDirection.Append("Ost-");
+                            break;
+                        case 'S':
+                            parsedWindDirection.Append("Süd-");
+                            break;
+                        case 'W':
+                            parsedWindDirection.Append("West-");
+                            break;
+                    }
+                }
+                return parsedWindDirection.ToString().TrimEnd('-');
             }
 
             private Task CommandError(CeresCommand command, string errorMsg)
