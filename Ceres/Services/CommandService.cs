@@ -26,6 +26,7 @@ namespace Ceres.Services
             _provider = provider;
             _discord.MessageReceived += OnMessageReceivedAsync;
             _discord.ReactionAdded += OnReactionAdded;
+            _discord.MessageCommandExecuted += MessageCommandHandler;
         }
 
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
@@ -88,6 +89,19 @@ namespace Ceres.Services
             }
         }
 
+        private async Task MessageCommandHandler(SocketMessageCommand arg)
+        {
+            await arg.DeferAsync();
+            SocketCommandContext context = new(_discord, (SocketUserMessage)arg.Data.Message);
+            CommandInfo emoteToGif = _commands.Commands.Where(cmd => cmd.Name == "EmoteToGif").ToList()[0];
+
+            IResult result = await _commands.ExecuteAsync(context, "EmoteToGif", _provider);
+            //IResult actRes = await emoteToGif.ExecuteAsync(context, (ParseResult)result, _provider);
+            if (!result.IsSuccess)
+                await context.Channel.SendMessageAsync(result.ToString());
+            await arg.DeleteOriginalResponseAsync();
+        }
+
         public class CommandsCollection : ModuleBase<SocketCommandContext>
         {
             private readonly DiscordSocketClient _discord;
@@ -99,6 +113,7 @@ namespace Ceres.Services
             private readonly DirectoryInfo _folderDir;
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
+            private readonly MessageReference _messageReference;
             //private readonly HttpClient _weatherStackApi;
 
             public CommandsCollection(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
@@ -284,10 +299,12 @@ namespace Ceres.Services
                     }
                 }
                 #endregion
-
-                if (Context.Message.Reference is not null)
+                
+                if (providedEmoteName == string.Empty)
                 {
-                    IMessage msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId); }).Result;
+                    IMessage msg = Context.Message.Reference is not null
+                        ? Task.Run(async () => { return await Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId); }).Result
+                        : Context.Message;
                     ITag[] emotesInMessage = msg.Tags.Where(tag => tag.Type == TagType.Emoji).ToArray();
                     List<string> emoteNames = new(emotesInMessage.Length);
                     foreach (ITag tag in emotesInMessage)
@@ -313,6 +330,7 @@ namespace Ceres.Services
                         }
                     });
                 }
+
                 IReadOnlyCollection<GuildEmote> serverEmotes = Context.Guild.Emotes;
                 List<GuildEmote> matchedEmotes = new();
 
