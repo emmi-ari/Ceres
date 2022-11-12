@@ -412,7 +412,7 @@ namespace Ceres.Services
 
                 HttpResponseMessage response = Task.Run(async () =>
                 {
-                    return await _weatherStackApi.GetAsync($"forecast?access_key={_config["weatherstack.token"]}&query={place}");
+                    return await _weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}");
                 }).Result;
 
                 string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;

@@ -12,9 +12,6 @@ namespace Ceres.Models.Apparyllis
 
         [JsonProperty("current")]
         public Current Current { get; init; }
-
-        [JsonProperty("forecast")]
-        public dynamic Forecast { get; init; }
     }
 
     public class Request
@@ -112,61 +109,4 @@ namespace Ceres.Models.Apparyllis
         [JsonProperty("is_day")]
         public string IsDay { get; init; }
     }
-
-    //public class Forecast
-    //{
-    //    public dynamic Day { get; init; }
-    //}
-
-    //[Obsolete("Fuck WeatherStack API responses", false)]
-    //public class Day
-    //{
-    //    [JsonProperty("date")]
-    //    public string Date { get; init; }
-
-    //    [JsonProperty("date_epoch")]
-    //    public int DateEpoch { get; init; }
-
-    //    [JsonProperty("astro")]
-    //    public Astro Astro { get; init; }
-
-    //    [JsonProperty("mintemp")]
-    //    public int Mintemp { get; init; }
-
-    //    [JsonProperty("maxtemp")]
-    //    public int Maxtemp { get; init; }
-
-    //    [JsonProperty("avgtemp")]
-    //    public int Avgtemp { get; init; }
-
-    //    [JsonProperty("totalsnow")]
-    //    public int Totalsnow { get; init; }
-
-    //    [JsonProperty("sunhour")]
-    //    public double Sunhour { get; init; }
-
-    //    [JsonProperty("uv_index")]
-    //    public int UvIndex { get; init; }
-    //}
-
-    //public class Astro
-    //{
-    //    [JsonProperty("sunrise")]
-    //    public string Sunrise { get; init; }
-
-    //    [JsonProperty("suninit")]
-    //    public string Suninit { get; init; }
-
-    //    [JsonProperty("moonrise")]
-    //    public string Moonrise { get; init; }
-
-    //    [JsonProperty("mooninit")]
-    //    public string Mooninit { get; init; }
-
-    //    [JsonProperty("moon_phase")]
-    //    public string MoonPhase { get; init; }
-
-    //    [JsonProperty("moon_illumination")]
-    //    public int MoonIllumination { get; init; }
-    //}
 }
