@@ -427,7 +427,7 @@ namespace Ceres.Services
                     ThumbnailUrl = serializedResponse.Current.WeatherIcons[0],
                     Description = $"__{serializedResponse.Current.WeatherDescriptions[0]} {serializedResponse.Current.Temperature} °C__\n\n" +
                     $"**Luftdruck:** {serializedResponse.Current.Pressure} HPa\n" +
-                    $"**Wind:** {serializedResponse.Current.WindSpeed} km/h **Richtung:** {ParseWindDirection(serializedResponse.Current.WindDir)} ({serializedResponse.Current.WindDegree} °)\n" +
+                    $"**Wind:** {serializedResponse.Current.WindSpeed} km/h {ParseWindDirection(serializedResponse.Current.WindDir)} ({serializedResponse.Current.WindDegree} °)\n" +
                     $"**Relative Luftfeuchte:** {serializedResponse.Current.Humidity} %",
                     Footer = new()
                     {
