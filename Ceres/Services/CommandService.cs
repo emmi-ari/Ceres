@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Net;
 using System.Text;
 
 // (\#if )(DEBUG|RELEASE)
@@ -118,7 +120,9 @@ namespace Ceres.Services
             private readonly DirectoryInfo _folderDir;
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
+#if WINDOWS
             private readonly HttpClient _weatherStackApi;
+#endif
 
             public CommandsCollection(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
@@ -130,6 +134,7 @@ namespace Ceres.Services
                 _logger = new();
                 _folderDir = new(config["ceres.foldercommandpath"]);
                 _unsafeRng = new();
+#if WINDOWS
                 HttpClient weatherStackApi = new()
                 {
                     BaseAddress = new("http://api.weatherstack.com/"),
@@ -137,6 +142,7 @@ namespace Ceres.Services
                 };
                 weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
                 _weatherStackApi = weatherStackApi;
+#endif
             }
 
             enum CeresCommand
@@ -411,12 +417,27 @@ namespace Ceres.Services
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
 
+#if WINDOWS
                 HttpResponseMessage response = Task.Run(async () =>
                 {
                     return await _weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}");
                 }).Result;
 
                 string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
+#else
+                string strResponse = Task.Run(async () =>
+                {
+                    using Process api = new();
+                    api.StartInfo.FileName = "curl";
+                    api.StartInfo.Arguments = $"current?access_key={_config["weatherstack.token"]}&query={place}";
+                    api.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    api.Start();
+                    api.BeginOutputReadLine();
+                    strResponse = await api.StandardOutput.ReadToEndAsync();
+                    return strResponse;
+                }).Result;
+#endif
+
                 WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
                 string location = place.ToLower() == "frankfurt" ? "Frankfurt am Main" : serializedResponse.Location.Name;
 
