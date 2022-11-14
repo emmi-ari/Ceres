@@ -132,7 +132,8 @@ namespace Ceres.Services
                 _unsafeRng = new();
                 HttpClient weatherStackApi = new()
                 {
-                    BaseAddress = new("http://api.weatherstack.com/")
+                    BaseAddress = new("http://api.weatherstack.com/"),
+                    Timeout = new(0, 0, 10)
                 };
                 weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
                 _weatherStackApi = weatherStackApi;
