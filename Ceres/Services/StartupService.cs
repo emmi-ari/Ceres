@@ -26,28 +26,17 @@ namespace Ceres.Services
 
         private async Task OnClientReady()
         {
-            Dictionary<string, string> nameLocalization = new()
-            {
-                { "en-US", "emotetogif" },
-                { "en-GB", "emotetogif" },
-                { "de", "emotezugif" }
-            };
-            Dictionary<string, string> descriptionLocalization = new()
-            {
-                { "en-US", "Emote to gif" },
-                { "en-GB", "Emote to gif" },
-                { "de", "Emote zu gif" },
-            };
             MessageCommandBuilder messageCommand = new()
             {
-                Name = "emotetogif",
+                Name = "Emote to GIF (in DMs)",
                 IsDefaultPermission = true,
                 IsDMEnabled = true,
                 DefaultMemberPermissions = GuildPermission.SendMessages,
             };
-            MessageCommandProperties[] messageCommandProperties = { messageCommand.WithNameLocalizations(nameLocalization).Build()};
-            messageCommandProperties[0].DescriptionLocalizations = descriptionLocalization;
-            messageCommandProperties[0].NameLocalizations = nameLocalization;
+
+            //messageCommand.Name = "Emote to GIF (in DMs)";
+            MessageCommandProperties[] messageCommandProperties = { messageCommand.Build()};
+            messageCommandProperties[0].NameLocalizations = new Dictionary<string, string>(0);
 
             await _discord.BulkOverwriteGlobalApplicationCommandsAsync(messageCommandProperties);
         }

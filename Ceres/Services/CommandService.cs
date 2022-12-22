@@ -288,6 +288,7 @@ namespace Ceres.Services
             [Alias("Emote", "Gif", "FuckNitro")]
             public Task EmoteToGif(string providedEmoteName = "")
             {
+                IDMChannel userDM = Task.Run(async () => { return await ((SocketGuildUser)Context.Message.Author).CreateDMChannelAsync(); }).Result;
                 #region Local function(s)
                 static void ConvertEmoteToGif(string emoteUrl, string emoteName, bool emoteIsAnimated)
                 {
@@ -336,7 +337,7 @@ namespace Ceres.Services
                         ConvertEmoteToGif(emote.Url, emote.Name, emote.Animated);
                     }
 
-                    return Task.Run(() =>
+                    return Task.Run(async () =>
                     {
                         List<FileAttachment> attachments = new(emotesInMessage.Length);
 
@@ -348,7 +349,15 @@ namespace Ceres.Services
 
                         foreach (ITag tag in emotesInMessage)
                         {
-                            Context.Channel.SendFilesAsync(attachments);
+                            //Context.Channel.SendFilesAsync(attachments);
+                            try
+                            {
+                                await userDM.SendFilesAsync(attachments);
+                            }
+                            catch (Exception)
+                            {
+                                await Context.Channel.SendFilesAsync(attachments);
+                            }
                         }
                     });
                 }
