@@ -473,7 +473,7 @@ namespace Ceres.Services
                     $"**Relative Luftfeuchte:** {serializedResponse.Current.Humidity} %",
                     Footer = new()
                     {
-                        Text = $"Data provided by WheatherStack API",
+                        Text = $"Data provided by WeatherStack API",
                         IconUrl = "https://rapidapi-prod-apis.s3.amazonaws.com/c2139e70-bb7e-4aaa-81e9-b8f70cdb77d4.png"
                     }
                 };
