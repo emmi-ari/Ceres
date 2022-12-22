@@ -2,6 +2,7 @@
 
 using Discord;
 using Discord.Commands;
+using Discord.Rest;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
@@ -9,8 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
 using System.Diagnostics;
-using System.Net.Sockets;
-using System.Net;
 using System.Text;
 
 // (\#if )(DEBUG|RELEASE)
@@ -33,7 +32,18 @@ namespace Ceres.Services
             _provider = provider;
             _discord.MessageReceived += OnMessageReceivedAsync;
             _discord.ReactionAdded += OnReactionAdded;
-            _discord.MessageCommandExecuted += MessageCommandHandler;
+            _discord.MessageCommandExecuted += OnMessageCommandAsync;
+            _discord.ThreadCreated += OnThreadCreatedAsync;
+        }
+
+        private async Task OnThreadCreatedAsync(SocketThreadChannel thread)
+        {
+            string parentChannelMention = ((SocketTextChannel)thread.ParentChannel).Mention;
+            string threadChannelMention = thread.Mention;
+            SocketTextChannel threadsChannel = (SocketTextChannel)thread.Guild.GetChannel(1053712925891772467);
+
+            if (!thread.IsPrivateThread)
+                await threadsChannel.SendMessageAsync($"{threadChannelMention} - {parentChannelMention}");
         }
 
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
@@ -52,6 +62,7 @@ namespace Ceres.Services
                 case 1034143757815271534:
                 case 1034143913524600864:
                 case 1034143781643108382:
+                case 1039099437357735936:
                     IMessage reactedMessage = Task.Run(async () => { return await arg2.Value.GetMessageAsync(arg3.MessageId); }).Result;
                     return reactedMessage.RemoveReactionAsync(reactionEmote, arg3.UserId);
 
@@ -61,9 +72,9 @@ namespace Ceres.Services
             #endregion
         }
 
-        private async Task OnMessageReceivedAsync(SocketMessage s)
+        private async Task OnMessageReceivedAsync(SocketMessage message)
         {
-            if (s is not SocketUserMessage msg) return;
+            if (message is not SocketUserMessage msg) return;
             if (msg.Author.Id == _discord.CurrentUser.Id) return;
 
             SocketCommandContext context = new(_discord, msg);
@@ -71,12 +82,12 @@ namespace Ceres.Services
             int prefixLength = 0;
 
             #region Reminder emphasizer
-            if (s.Embeds != null || s.Embeds.Count != 0)
+            if (msg.Embeds != null || msg.Embeds.Count != 0)
             {
-                IReadOnlyCollection<Embed> msgEmbed = s.Embeds;
+                IReadOnlyCollection<Embed> msgEmbed = msg.Embeds;
                 string embedDescription = msgEmbed?.FirstOrDefault()?.Description;
                 embedDescription ??= string.Empty;
-                if (s.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
+                if (msg.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
                 {
                     await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
                 }
@@ -96,17 +107,17 @@ namespace Ceres.Services
             }
         }
 
-        private async Task MessageCommandHandler(SocketMessageCommand arg)
+        private async Task OnMessageCommandAsync(SocketMessageCommand command)
         {
-            await arg.DeferAsync();
-            SocketCommandContext context = new(_discord, (SocketUserMessage)arg.Data.Message);
+            await command.DeferAsync();
+            SocketCommandContext context = new(_discord, (SocketUserMessage)command.Data.Message);
             CommandInfo emoteToGif = _commands.Commands.Where(cmd => cmd.Name == "EmoteToGif").ToList()[0];
 
             IResult result = await _commands.ExecuteAsync(context, "EmoteToGif", _provider);
             //IResult actRes = await emoteToGif.ExecuteAsync(context, (ParseResult)result, _provider);
             if (!result.IsSuccess)
                 await context.Channel.SendMessageAsync(result.ToString());
-            await arg.DeleteOriginalResponseAsync();
+            await command.DeleteOriginalResponseAsync();
         }
 
         public class CommandsCollection : ModuleBase<SocketCommandContext>
