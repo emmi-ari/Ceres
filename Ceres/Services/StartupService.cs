@@ -26,19 +26,31 @@ namespace Ceres.Services
 
         private async Task OnClientReady()
         {
+            //SlashCommandBuilder slashCommand = new();
+            //slashCommand.WithName("weather");
+            //slashCommand.WithDescription("Weather");
+            //slashCommand.WithDescriptionLocalizations(new Dictionary<string, string>(0));
+            //slashCommand.WithDefaultPermission(true);
+            //slashCommand.WithNameLocalizations(new Dictionary<string, string>(0));
+            //SlashCommandProperties slashCommandBuilder = slashCommand.Build();
+
             MessageCommandBuilder messageCommand = new()
             {
                 Name = "Emote to GIF (in DMs)",
                 IsDefaultPermission = true,
                 IsDMEnabled = true,
-                DefaultMemberPermissions = GuildPermission.SendMessages,
+                DefaultMemberPermissions = GuildPermission.SendMessages
             };
 
-            //messageCommand.Name = "Emote to GIF (in DMs)";
-            MessageCommandProperties[] messageCommandProperties = { messageCommand.Build()};
+            MessageCommandProperties[] messageCommandProperties = { messageCommand.Build() };
             messageCommandProperties[0].NameLocalizations = new Dictionary<string, string>(0);
 
             await _discord.BulkOverwriteGlobalApplicationCommandsAsync(messageCommandProperties);
+
+            //foreach (var guild in _discord.Guilds)
+            //{
+            //    await guild.CreateApplicationCommandAsync(slashCommandBuilder);
+            //}
         }
 
         public async Task StartAsync()
