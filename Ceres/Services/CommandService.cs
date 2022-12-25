@@ -429,6 +429,34 @@ namespace Ceres.Services
                     returnValue.Add(observationTime);
                     return returnValue;
                 }
+
+                static string ParseWindDirection(string abbreviation)
+                {
+                    if (abbreviation.Length > 3)
+                        throw new ArgumentException($"{nameof(abbreviation)} can not contain less than 1 or more than 3 chars");
+
+                    StringBuilder parsedWindDirection = new(4, 15);
+
+                    for (int i = 0; i < abbreviation.Length; i++)
+                    {
+                        switch (abbreviation[i])
+                        {
+                            case 'N':
+                                parsedWindDirection.Append("Nord-");
+                                break;
+                            case 'E':
+                                parsedWindDirection.Append("Ost-");
+                                break;
+                            case 'S':
+                                parsedWindDirection.Append("Süd-");
+                                break;
+                            case 'W':
+                                parsedWindDirection.Append("West-");
+                                break;
+                        }
+                    }
+                    return parsedWindDirection.ToString().TrimEnd('-');
+                }
                 #endregion
 
                 if (place == "frankfurt".ToLower() && Context.User.Id == 346295434546774016)
