@@ -2,7 +2,6 @@
 
 using Discord;
 using Discord.Commands;
-using Discord.Rest;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
@@ -11,6 +10,7 @@ using Newtonsoft.Json;
 
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 
 // (\#if )(DEBUG|RELEASE)
 // $1!$2F
@@ -221,8 +221,25 @@ namespace Ceres.Services
 
             [Command("echo")]
             [Alias("say")]
-            public Task Say(string msg, ulong guildId = 0ul, ulong channelId = 0ul, ulong replyToMsgID = 0ul)
+            public Task Say(string msg, string locationLink = "", ulong guildId = 0ul, ulong channelId = 0ul, ulong messageId = 0ul)
             {
+                #region Location link parsing
+                bool validUri = Uri.TryCreate(locationLink, UriKind.Absolute, out _);
+                Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
+                if (match.Groups.Count >= 2)
+                {
+                    string[] ids = match.Groups[0].Value.Replace('/', ',').TrimStart(',').Split(',');
+                    guildId = Convert.ToUInt64(ids[0]);
+                    channelId = Convert.ToUInt64(ids[1]);
+                    if (ids.Length == 3) messageId = Convert.ToUInt64(ids[2]);
+                }
+                else
+                {
+                    return Context.Channel.SendMessageAsync("Make sure it's a discord link with at least two (slash seperated) IDs");
+                }
+                
+                #endregion
+
                 #region Guild ID parsing
                 if (guildId == 0ul)
                     guildId = Context.Guild.Id;
@@ -239,12 +256,12 @@ namespace Ceres.Services
                 #endregion
 
                 #region Message ID parsing
-                if (replyToMsgID != 0ul)
+                if (messageId != 0ul)
                 {
-                    IMessage replyMessage = Task.Run(async () => { return await messageChannel.GetMessageAsync(replyToMsgID); }).Result;
+                    IMessage replyMessage = Task.Run(async () => { return await messageChannel.GetMessageAsync(messageId); }).Result;
                     if (replyMessage == null)
                         return Context.Channel.SendMessageAsync("Invalid Message ID");
-                    MessageReference reference = new(replyToMsgID, channelId, guildId, true);
+                    MessageReference reference = new(messageId, channelId, guildId, true);
 
                     return messageChannel.SendMessageAsync(msg, messageReference: reference);
                 }
@@ -507,34 +524,6 @@ namespace Ceres.Services
                 };
 
                 return ReplyAsync(embed: embed.Build());
-            }
-
-            private string ParseWindDirection(string abbreviation)
-            {
-                if (abbreviation.Length > 3)
-                    throw new ArgumentException($"{nameof(abbreviation)} can not contain less than 1 or more than 3 chars");
-
-                StringBuilder parsedWindDirection = new(4, 15);
-
-                for (int i = 0; i < abbreviation.Length; i++)
-                {
-                    switch (abbreviation[i])
-                    {
-                        case 'N':
-                            parsedWindDirection.Append("Nord-");
-                            break;
-                        case 'E':
-                            parsedWindDirection.Append("Ost-");
-                            break;
-                        case 'S':
-                            parsedWindDirection.Append("Süd-");
-                            break;
-                        case 'W':
-                            parsedWindDirection.Append("West-");
-                            break;
-                    }
-                }
-                return parsedWindDirection.ToString().TrimEnd('-');
             }
 
             private Task CommandError(CeresCommand command, string errorMsg)
