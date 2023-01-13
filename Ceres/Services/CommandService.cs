@@ -224,7 +224,6 @@ namespace Ceres.Services
             public Task Say(string msg, string locationLink = "", ulong guildId = 0ul, ulong channelId = 0ul, ulong messageId = 0ul)
             {
                 #region Location link parsing
-                bool validUri = Uri.TryCreate(locationLink, UriKind.Absolute, out _);
                 Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
                 if (match.Groups.Count >= 2)
                 {
@@ -494,7 +493,7 @@ namespace Ceres.Services
                 {
                     using Process api = new();
                     api.StartInfo.FileName = "curl";
-                    api.StartInfo.Arguments = $"current?access_key={_config["weatherstack.token"]}&query={place}";
+                    api.StartInfo.Arguments = $"http://api.weatherstack.com/current?access_key={_config["weatherstack.token"]}&query={place}";
                     api.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                     api.Start();
                     api.BeginOutputReadLine();
