@@ -11,28 +11,38 @@ namespace Ceres.Services
     public class StartupService
     {
         private readonly IServiceProvider _provider;
-        private readonly DiscordSocketClient _discord;
+        private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IConfigurationRoot _config;
 
-        public StartupService(IServiceProvider provider, DiscordSocketClient discord, CommandService commands, IConfigurationRoot config)
+        public StartupService(IServiceProvider provider, DiscordSocketClient client, CommandService commands, IConfigurationRoot config)
         {
             _provider = provider;
             _config = config;
-            _discord = discord;
+            _client = client;
             _commands = commands;
-            _discord.Ready += OnClientReady;
+            _client.Ready += OnClientReady;
         }
 
         private async Task OnClientReady()
         {
-            //SlashCommandBuilder slashCommand = new();
-            //slashCommand.WithName("weather");
-            //slashCommand.WithDescription("Weather");
-            //slashCommand.WithDescriptionLocalizations(new Dictionary<string, string>(0));
-            //slashCommand.WithDefaultPermission(true);
-            //slashCommand.WithNameLocalizations(new Dictionary<string, string>(0));
-            //SlashCommandProperties slashCommandBuilder = slashCommand.Build();
+            SlashCommandBuilder addEmoteCommand = new();
+            addEmoteCommand.WithName("addemote");
+            addEmoteCommand.WithDescription("Add Emote");
+            addEmoteCommand.WithDescriptionLocalizations(new Dictionary<string, string>(0));
+            addEmoteCommand.WithDefaultPermission(true);
+            addEmoteCommand.WithNameLocalizations(new Dictionary<string, string>(0));
+            addEmoteCommand.WithDefaultMemberPermissions(GuildPermission.ManageEmojisAndStickers);
+            SlashCommandProperties addEmoteCommandBuilder = addEmoteCommand.Build();
+
+            List<ApplicationCommandOptionProperties> slashCommandOptions = new(3);
+            ApplicationCommandOptionProperties emoteName = new() { Name = "emotename", Description = "Emote name", Type = ApplicationCommandOptionType.String, IsRequired = true };
+            ApplicationCommandOptionProperties emoteEntity = new() { Name = "emoteurl", Description = "Entity", Type = ApplicationCommandOptionType.String, IsRequired = false };
+            ApplicationCommandOptionProperties emoteUrl = new() { Name = "emoteattachment", Description = "Emote attachment", Type = ApplicationCommandOptionType.Attachment, IsRequired = false};
+            slashCommandOptions.Add(emoteName);
+            slashCommandOptions.Add(emoteEntity);
+            slashCommandOptions.Add(emoteUrl);
+            addEmoteCommandBuilder.Options = slashCommandOptions;
 
             MessageCommandBuilder messageCommand = new()
             {
@@ -45,12 +55,12 @@ namespace Ceres.Services
             MessageCommandProperties[] messageCommandProperties = { messageCommand.Build() };
             messageCommandProperties[0].NameLocalizations = new Dictionary<string, string>(0);
 
-            await _discord.BulkOverwriteGlobalApplicationCommandsAsync(messageCommandProperties);
+            await _client.BulkOverwriteGlobalApplicationCommandsAsync(messageCommandProperties);
 
-            //foreach (var guild in _discord.Guilds)
-            //{
-            //    await guild.CreateApplicationCommandAsync(slashCommandBuilder);
-            //}
+            foreach (var guild in _client.Guilds)
+            {
+                await guild.CreateApplicationCommandAsync(addEmoteCommandBuilder);
+            }
         }
 
         public async Task StartAsync()
@@ -59,8 +69,8 @@ namespace Ceres.Services
             if (string.IsNullOrWhiteSpace(_config["ceres.discord_token"]))
                 throw new Exception($"No discord token in ceres_config.json");
 
-            await _discord.LoginAsync(TokenType.Bot, discordToken);
-            await _discord.StartAsync();
+            await _client.LoginAsync(TokenType.Bot, discordToken);
+            await _client.StartAsync();
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider); // Load commands and modules into the command service
         }

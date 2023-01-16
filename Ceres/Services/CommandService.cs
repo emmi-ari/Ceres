@@ -9,31 +9,35 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
 using System.Diagnostics;
+using System.Net;
+using System.Reflection.Metadata.Ecma335;
+using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
 
 // (\#if )(DEBUG|RELEASE)
-// $1!$2F
+// $1!$2
 
 namespace Ceres.Services
 {
     public class CommandHandler
     {
-        private readonly DiscordSocketClient _discord;
+        private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IConfigurationRoot _config;
         private readonly IServiceProvider _provider;
 
-        public CommandHandler(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
+        public CommandHandler(DiscordSocketClient client, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
         {
-            _discord = discord;
+            _client = client;
             _commands = commands;
             _config = config;
             _provider = provider;
-            _discord.MessageReceived += OnMessageReceivedAsync;
-            _discord.ReactionAdded += OnReactionAdded;
-            _discord.MessageCommandExecuted += OnMessageCommandAsync;
-            _discord.ThreadCreated += OnThreadCreatedAsync;
+            _client.MessageReceived += OnMessageReceivedAsync;
+            _client.ReactionAdded += OnReactionAdded;
+            _client.MessageCommandExecuted += OnMessageCommandAsync;
+            _client.SlashCommandExecuted += OnSlashCommandAsync;
+            _client.ThreadCreated += OnThreadCreatedAsync;
         }
 
         private async Task OnThreadCreatedAsync(SocketThreadChannel thread)
@@ -75,9 +79,9 @@ namespace Ceres.Services
         private async Task OnMessageReceivedAsync(SocketMessage message)
         {
             if (message is not SocketUserMessage msg) return;
-            if (msg.Author.Id == _discord.CurrentUser.Id) return;
+            if (msg.Author.Id == _client.CurrentUser.Id) return;
 
-            SocketCommandContext context = new(_discord, msg);
+            SocketCommandContext context = new(_client, msg);
             string prefix = _config["ceres.prefix"];
             int prefixLength = 0;
 
@@ -90,11 +94,12 @@ namespace Ceres.Services
                 if (msg.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
                 {
                     await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
+                    return;
                 }
             }
             #endregion
 
-            if (msg.HasStringPrefix(prefix, ref prefixLength) || msg.HasMentionPrefix(_discord.CurrentUser, ref prefixLength))
+            if (msg.HasStringPrefix(prefix, ref prefixLength) || msg.HasMentionPrefix(_client.CurrentUser, ref prefixLength))
             {
                 string commandWithoutPrefix = msg.Content.Replace(prefix, string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(commandWithoutPrefix))
@@ -110,7 +115,7 @@ namespace Ceres.Services
         private async Task OnMessageCommandAsync(SocketMessageCommand command)
         {
             await command.DeferAsync();
-            SocketCommandContext context = new(_discord, (SocketUserMessage)command.Data.Message);
+            SocketCommandContext context = new(_client, (SocketUserMessage)command.Data.Message);
             CommandInfo emoteToGif = _commands.Commands.Where(cmd => cmd.Name == "EmoteToGif").ToList()[0];
 
             IResult result = await _commands.ExecuteAsync(context, "EmoteToGif", _provider);
@@ -120,9 +125,47 @@ namespace Ceres.Services
             await command.DeleteOriginalResponseAsync();
         }
 
+        private async Task OnSlashCommandAsync(SocketSlashCommand arg)
+        {
+            await arg.DeferAsync();
+            SocketSlashCommandDataOption[] commandArgumentsArray = arg.Data.Options.ToArray();
+            SocketGuild guild = _client.GetGuild((ulong)arg.GuildId);
+
+            switch (arg.CommandName)
+            {
+                case "addemote":
+                    string emoteName = (string)commandArgumentsArray[0].Value;
+                    GuildEmote emote = null;
+                    if (commandArgumentsArray.Length <= 1) await arg.FollowupAsync("No emote source given");
+                    if (commandArgumentsArray.Length == 3) await arg.FollowupAsync("Too many emote source given");
+                    try
+                    {
+                        if (commandArgumentsArray[1].Value is Attachment attachment)
+                            CommandsCollection.AddEmote(guild, out emote, emoteName, attachment: attachment);
+                        else
+                            try { CommandsCollection.AddEmote(guild, out emote, emoteName, (string)commandArgumentsArray[1].Value); }
+                            catch (UriFormatException) { await arg.FollowupAsync("You didn't provide a valid URL for EmoteUrl"); }
+                    }
+                    catch (Exception ex)
+                    {
+                        await arg.FollowupAsync(ex.Message);
+                    }
+
+                    string emoteInMessage = string.Empty;
+                    if (emote.Url.EndsWith("gif"))
+                        emoteInMessage = $"<a:{emote.Name}:{emote.Id}>";
+                    else
+                        emoteInMessage = $"<:{emote.Name}:{emote.Id}>";
+
+                    await arg.FollowupAsync($"{emoteInMessage} Emote {emoteName} added successfully");
+                    return;
+            }
+        }
+
         public class CommandsCollection : ModuleBase<SocketCommandContext>
         {
-            private readonly DiscordSocketClient _discord;
+            #region Non Static
+            private readonly DiscordSocketClient _client;
             private readonly CommandService _commands;
             private readonly IConfigurationRoot _config;
             private readonly IServiceProvider _provider;
@@ -135,13 +178,13 @@ namespace Ceres.Services
             private readonly HttpClient _weatherStackApi;
 #endif
 
-            public CommandsCollection(DiscordSocketClient discord, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
+            public CommandsCollection(DiscordSocketClient client, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
-                _discord = discord;
+                _client = client;
                 _commands = commands;
                 _config = config;
                 _provider = provider;
-                _fronterStatusMethods = new(discord, config);
+                _fronterStatusMethods = new(client, config);
                 _logger = new();
                 _folderDir = new(config["ceres.foldercommandpath"]);
                 _unsafeRng = new();
@@ -236,7 +279,7 @@ namespace Ceres.Services
                 {
                     return Context.Channel.SendMessageAsync("Make sure it's a discord link with at least two (slash seperated) IDs");
                 }
-                
+
                 #endregion
 
                 #region Guild ID parsing
@@ -561,6 +604,29 @@ namespace Ceres.Services
                 await Context.Message.RemoveReactionAsync(_waitEmote, 966325392707301416);
                 await base.AfterExecuteAsync(command);
             }
+            #endregion
+            #region Static
+            static internal void AddEmote(SocketGuild guild, out GuildEmote emote, string emoteName, string emoteUrl = null, Attachment attachment = null)
+            {
+                emote = null;
+                string definitveEmoteUrl = emoteUrl == null
+                    ? attachment.Url
+                    : emoteUrl;
+                Uri emoteUri = new(definitveEmoteUrl); // Throws exception if URL is not valid. Gets handled in CommandHandler.OnSlashCommandAsync(SocketSlashCommand)
+
+                using HttpClient httpClient = new();
+                using HttpResponseMessage response = Task.Run(async () => { return await httpClient.GetAsync(emoteUri); }).Result;
+                using Stream stream = Task.Run(async () => { return await response.Content.ReadAsStreamAsync(); }).Result;
+                try
+                {
+                    emote = Task.Run(async () => { return await guild.CreateEmoteAsync(emoteName, new Image(stream)); }).Result;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.Contains("BINARY_TYPE_MAX_SIZE") || ex.Message.Contains("50138")) throw new Exception("File size must be 2048 KiB or less", ex);
+                }
+            }
+            #endregion
         }
     }
 }
