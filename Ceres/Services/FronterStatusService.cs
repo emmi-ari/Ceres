@@ -22,7 +22,7 @@ namespace Ceres.Services
         public FronterStatusService(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _commonFronterStatus = new(discord, config);
-#if !RELEASE
+#if RELEASE
             _timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
             TriggerStatusRefresh();
 #endif
@@ -92,7 +92,7 @@ namespace Ceres.Services
 
         internal async Task<string> SetFronterStatusAsync()
         {
-#if !DEBUG
+#if DEBUG
             string statusMessage = "DBG - No fronter info";
             await _logger.OnLogAsync(new(LogSeverity.Debug, nameof(this.SetFronterStatusAsync), $"Debug"));
 #else
@@ -118,7 +118,7 @@ namespace Ceres.Services
 
         private async Task<ApparyllisModel> GetFrontStatusAsync()
         {
-#if !RELEASE
+#if RELEASE
             
             HttpResponseMessage frontingStatusResponse = await _request.GetAsync("/v1/fronters/");
             string response = await frontingStatusResponse.Content.ReadAsStringAsync();
@@ -129,7 +129,7 @@ namespace Ceres.Services
 
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(responseSingularFronter);
 #endif
-#if !RELEASE
+#if RELEASE
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
             string logMessage = $"Recieved response from apparyllis server: {frontingStatusResponse.StatusCode}";
             LogSeverity severity = LogSeverity.Info;
