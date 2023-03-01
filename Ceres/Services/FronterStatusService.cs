@@ -99,7 +99,7 @@ namespace Ceres.Services
             List<FrontMemberInfos>[] frontInfos = await GetFrontersList();
             var serializedFronterList = frontInfos[0];
             var serializedCustomFrontList = frontInfos[1];
-            string statusMessage = "Front: ";
+            string statusMessage = string.Empty;
 
             serializedFronterList.ForEach(member => statusMessage += $"{member.MemberName}, ");
             if (serializedCustomFrontList.Count > 0)
