@@ -109,6 +109,8 @@ namespace Ceres.Services
                 statusMessage = $"{statusMessage.TrimEnd(',').TrimEnd(' ')})";
                 statusMessage = statusMessage.Replace(", (", " (").Replace(",)", ")");
             }
+            else
+                statusMessage = statusMessage.Trim().TrimEnd(',');
 #endif
 
             await _discord.SetGameAsync(statusMessage);
