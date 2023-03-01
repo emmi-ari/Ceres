@@ -52,7 +52,7 @@ namespace Ceres.Services
             _discord = discord;
             _config = config;
             _logger = new();
-            Debug.WriteLine("=============== DEBUG ===============");
+            //Debug.WriteLine("=============== DEBUG ===============");
             _memberIdRelation = GetMemberIdNames();
             _customFrontIdRelation = GetCustomFrontIdRelation();
             // Debug.WriteLine(_customFrontIdRelation[]);
@@ -107,6 +107,7 @@ namespace Ceres.Services
                 statusMessage = $"{statusMessage.TrimEnd(',').TrimEnd(' ')} (";
                 serializedCustomFrontList.ForEach(member => statusMessage += $"{member.MemberName}, ");
                 statusMessage = $"{statusMessage.TrimEnd(',').TrimEnd(' ')})";
+                statusMessage = statusMessage.Replace(", (", " (").Replace(",)", ")");
             }
 #endif
 
@@ -175,6 +176,7 @@ namespace Ceres.Services
                         catch (KeyNotFoundException) { continue; }
 
                         serializedCustomFrontList.Add(new(_customFrontIdRelation[fronter.Member], fronter.StartTime, fronter.EndTime));
+                    continue;
                     }
 
                 serializedFronterList.Add(new (_memberIdRelation[fronter.Member], fronter.StartTime, fronter.EndTime));
