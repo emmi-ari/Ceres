@@ -64,7 +64,7 @@ namespace Ceres.Services
                 case 1034143913524600864:
                 case 1034143781643108382:
                 case 1039099437357735936:
-                    IMessage reactedMessage = Task.Run(async () => { return await arg2.Value.GetMessageAsync(arg3.MessageId); }).Result;
+                    IMessage reactedMessage = WaitFor(arg2.Value.GetMessageAsync(arg3.MessageId));
                     return reactedMessage.RemoveReactionAsync(reactionEmote, arg3.UserId);
 
                 default:
@@ -159,6 +159,9 @@ namespace Ceres.Services
             }
         }
 
+        internal static A WaitFor<A>(Task<A> task)
+            => Task.Run(async () => { return await task; }).Result;
+
         public class CommandsCollection : ModuleBase<SocketCommandContext>
         {
             #region Non Static
@@ -244,7 +247,7 @@ namespace Ceres.Services
                 if (messageId != null)
                 {
                     bool channelValid = ulong.TryParse(messageId, out ulong messageIdUlong);
-                    msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync(messageIdUlong); }).Result;
+                    msg = WaitFor(Context.Channel.GetMessageAsync(messageIdUlong));
                     if (msg == null) return CommandError(CeresCommand.AddReaction, "Error: **Command must be executed in the same channel**");
                     if (!channelValid) return CommandError(CeresCommand.AddReaction, "Error: **Something's wrong with the message ID**");
                 }
@@ -253,7 +256,7 @@ namespace Ceres.Services
                     if (Context.Message.Reference == null)
                         return CommandError(CeresCommand.AddReaction, "Error: **No message ID specified and not replied to any message**");
 
-                    msg = Task.Run(async () => { return await Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId); }).Result;
+                    msg = WaitFor(Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId));
                 }
 
                 dynamic reaction = null;
@@ -311,7 +314,7 @@ namespace Ceres.Services
                 #region Message ID parsing
                 if (messageId != 0ul)
                 {
-                    IMessage replyMessage = Task.Run(async () => { return await messageChannel.GetMessageAsync(messageId); }).Result;
+                    IMessage replyMessage = WaitFor(messageChannel.GetMessageAsync(messageId));
                     if (replyMessage == null)
                         return Context.Channel.SendMessageAsync("Invalid Message ID");
                     MessageReference reference = new(messageId, channelId, guildId, true);
@@ -358,13 +361,13 @@ namespace Ceres.Services
             [Alias("Emote", "Gif", "FuckNitro")]
             public Task EmoteToGif(string providedEmoteName = "")
             {
-                IDMChannel userDM = Task.Run(async () => { return await ((SocketGuildUser)Context.Message.Author).CreateDMChannelAsync(); }).Result;
+                IDMChannel userDM = WaitFor(((SocketGuildUser)Context.Message.Author).CreateDMChannelAsync());
                 #region Local function(s)
                 static void ConvertEmoteToGif(string emoteUrl, string emoteName, bool emoteIsAnimated)
                 {
                     // Download emote
                     HttpClient client = new();
-                    Stream stream = Task.Run(async () => { return await client.GetStreamAsync(emoteUrl); }).Result;
+                    Stream stream = WaitFor(client.GetStreamAsync(emoteUrl));
                     Stream file = File.Create($"{emoteName}.gif");
                     stream.CopyTo(file);
                     stream.Dispose();
@@ -396,7 +399,7 @@ namespace Ceres.Services
                 if (providedEmoteName == string.Empty)
                 {
                     IMessage msg = Context.Message.Reference is not null
-                        ? Task.Run(async () => { return await Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId); }).Result
+                        ? WaitFor(Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId))
                         : Context.Message;
                     ITag[] emotesInMessage = msg.Tags.Where(tag => tag.Type == TagType.Emoji).ToArray();
                     List<string> emoteNames = new(emotesInMessage.Length);
@@ -541,7 +544,7 @@ namespace Ceres.Services
                     return await _weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}");
                 }).Result;
 
-                string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
+                string strResponse = AwaitSynchronously(response.Content.ReadAsStringAsync());
 #else
                 string strResponse = Task.Run(async () =>
                 {
@@ -627,11 +630,11 @@ namespace Ceres.Services
                 Uri emoteUri = new(definitveEmoteUrl); // Throws exception if URL is not valid. Gets handled in CommandHandler.OnSlashCommandAsync(SocketSlashCommand)
 
                 using HttpClient httpClient = new();
-                using HttpResponseMessage response = Task.Run(async () => { return await httpClient.GetAsync(emoteUri); }).Result;
-                using Stream stream = Task.Run(async () => { return await response.Content.ReadAsStreamAsync(); }).Result;
+                using HttpResponseMessage response = WaitFor(httpClient.GetAsync(emoteUri));
+                using Stream stream = WaitFor(response.Content.ReadAsStreamAsync());
                 try
                 {
-                    emote = Task.Run(async () => { return await guild.CreateEmoteAsync(emoteName, new Image(stream)); }).Result;
+                    emote = WaitFor(guild.CreateEmoteAsync(emoteName, new Image(stream)));
                 }
                 catch (Exception ex)
                 {
