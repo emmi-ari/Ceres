@@ -174,9 +174,7 @@ namespace Ceres.Services
             private readonly DirectoryInfo _folderDir;
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
-#if WINDOWS
             private readonly HttpClient _weatherStackApi;
-#endif
 
             public CommandsCollection(DiscordSocketClient client, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
@@ -188,7 +186,6 @@ namespace Ceres.Services
                 _logger = new();
                 _folderDir = new(config["ceres.foldercommandpath"]);
                 _unsafeRng = new();
-#if WINDOWS
                 HttpClient weatherStackApi = new()
                 {
                     BaseAddress = new("http://api.weatherstack.com/"),
@@ -196,7 +193,6 @@ namespace Ceres.Services
                 };
                 weatherStackApi.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
                 _weatherStackApi = weatherStackApi;
-#endif
             }
 
             enum CeresCommand
@@ -361,8 +357,6 @@ namespace Ceres.Services
             [Alias("Emote", "Gif", "FuckNitro")]
             public Task EmoteToGif(string providedEmoteName = "")
             {
-                IDMChannel userDM = WaitFor(((SocketGuildUser)Context.Message.Author).CreateDMChannelAsync());
-                #region Local function(s)
                 static void ConvertEmoteToGif(string emoteUrl, string emoteName, bool emoteIsAnimated)
                 {
                     // Download emote
@@ -394,7 +388,8 @@ namespace Ceres.Services
                         ffmpeg.Dispose();
                     }
                 }
-                #endregion
+
+                IDMChannel userDM = WaitFor(((SocketGuildUser)Context.Message.Author).CreateDMChannelAsync());
 
                 if (providedEmoteName == string.Empty)
                 {
@@ -422,7 +417,6 @@ namespace Ceres.Services
 
                         foreach (ITag tag in emotesInMessage)
                         {
-                            //Context.Channel.SendFilesAsync(attachments);
                             try
                             {
                                 await userDM.SendFilesAsync(attachments);
@@ -538,26 +532,12 @@ namespace Ceres.Services
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
 
-#if WINDOWS
                 HttpResponseMessage response = Task.Run(async () =>
                 {
                     return await _weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}");
                 }).Result;
 
-                string strResponse = AwaitSynchronously(response.Content.ReadAsStringAsync());
-#else
-                string strResponse = Task.Run(async () =>
-                {
-                    using Process api = new();
-                    api.StartInfo.FileName = "curl";
-                    api.StartInfo.Arguments = $"http://api.weatherstack.com/current?access_key={_config["weatherstack.token"]}&query={place}";
-                    api.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    api.Start();
-                    api.BeginOutputReadLine();
-                    strResponse = await api.StandardOutput.ReadToEndAsync();
-                    return strResponse;
-                }).Result;
-#endif
+                string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
 
                 WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
                 string location = place.ToLower() == "frankfurt" ? "Frankfurt am Main" : serializedResponse.Location.Name;
