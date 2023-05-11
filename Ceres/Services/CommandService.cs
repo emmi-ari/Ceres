@@ -9,9 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
 using System.Diagnostics;
-using System.Net;
-using System.Reflection.Metadata.Ecma335;
-using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -215,6 +212,20 @@ namespace Ceres.Services
             {
                 _ = _fronterStatusMethods.SetFronterStatusAsync();
                 return ReplyAsync("Front status updated");
+            }
+
+            [Command("ToggleStatus")]
+            [Alias("toggle")]
+            [Summary("Enables or disables Ceres' status message")]
+            public Task ToggleStatus()
+            {
+                bool isStatusSet = !string.IsNullOrEmpty(_client.CurrentUser.Activities.FirstOrDefault()?.Name);
+                if (isStatusSet)
+                    _client.SetActivityAsync(null);
+                else
+                    _ = _fronterStatusMethods.SetFronterStatusAsync();
+
+                return ReplyAsync((isStatusSet ? "Dis" : "En") + "abled status");
             }
 
             [Command("egg")]
@@ -601,7 +612,8 @@ namespace Ceres.Services
                     }
                     File.Delete("palette.png");
                 }
-                await Context.Message.RemoveReactionAsync(_waitEmote, 966325392707301416);
+                await Context.Message.RemoveReactionAsync(_waitEmote, 966325392707301416);  // Ceres production
+                await Context.Message.RemoveReactionAsync(_waitEmote, 1055501764780113951); // Ceres beta
                 await base.AfterExecuteAsync(command);
             }
             #endregion
