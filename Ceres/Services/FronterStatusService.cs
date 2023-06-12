@@ -9,9 +9,6 @@ using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json;
 
-// (\#if )(DEBUG|RELEASE)
-// $1!$2
-
 namespace Ceres.Services
 {
     internal class FronterStatusService
@@ -22,10 +19,8 @@ namespace Ceres.Services
         public FronterStatusService(DiscordSocketClient discord, IConfigurationRoot config)
         {
             _commonFronterStatus = new(discord, config);
-#if RELEASE
             _timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
             TriggerStatusRefresh();
-#endif
         }
 
         private async void TriggerStatusRefresh()
@@ -92,10 +87,6 @@ namespace Ceres.Services
 
         internal async Task<string> SetFronterStatusAsync()
         {
-#if DEBUG
-            string statusMessage = "DBG - No fronter info";
-            await _logger.OnLogAsync(new(LogSeverity.Debug, nameof(this.SetFronterStatusAsync), $"Debug"));
-#else
             List<FrontMemberInfos>[] frontInfos = await GetFrontersList();
             var serializedFronterList = frontInfos[0];
             var serializedCustomFrontList = frontInfos[1];
@@ -111,7 +102,6 @@ namespace Ceres.Services
             }
             else
                 statusMessage = statusMessage.Trim().TrimEnd(',');
-#endif
 
             await _discord.SetGameAsync(statusMessage);
 
@@ -120,18 +110,10 @@ namespace Ceres.Services
 
         private async Task<ApparyllisModel> GetFrontStatusAsync()
         {
-#if RELEASE
             
             HttpResponseMessage frontingStatusResponse = await _request.GetAsync("/v1/fronters/");
             string response = await frontingStatusResponse.Content.ReadAsStringAsync();
             response = "{\"response\":" + response + "}"; // Because why would an API give valid JSON as response, am I right?
-#else
-            string responseSingularFronter = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}}";
-            string responseMultipleFronters = "{\"exists\":true,\"id\":\"632761e09216998cc4ad3da6\",\"content\":{\"custom\":false,\"startTime\":1663525342995,\"member\":\"62a8972a7cc97c017b0ea31a\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663525342984}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebc\",\"content\":{\"custom\":false,\"startTime\":1663611071274,\"member\":\"623ccab6820d5b982fb848b7\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611071264}},{\"exists\":true,\"id\":\"6328b0c01b593c86e87feebd\",\"content\":{\"custom\":false,\"startTime\":1663611072458,\"member\":\"623cca89820d5b982fb848b6\",\"live\":true,\"endTime\":null,\"uid\":\"IEBZx5faI8ZTV8BuuCxmYoLeWP63\",\"lastOperationTime\":1663611072458}}";
-
-            ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(responseSingularFronter);
-#endif
-#if RELEASE
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
             string logMessage = $"Recieved response from apparyllis server: {frontingStatusResponse.StatusCode}";
             LogSeverity severity = LogSeverity.Info;
@@ -141,7 +123,6 @@ namespace Ceres.Services
                 severity = LogSeverity.Warning;
 
             await _logger.OnLogAsync(new(severity, nameof(this.GetFrontStatusAsync), logMessage));
-#endif
 
             return serializedResponse;
         }
