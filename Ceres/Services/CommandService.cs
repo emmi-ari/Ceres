@@ -575,7 +575,7 @@ namespace Ceres.Services
                     Fields = GetEmbedFields(serializedResponse),
                     ThumbnailUrl = serializedResponse.Current.WeatherIcons[0],
                     Description = $"__**{serializedResponse.Current.WeatherDescriptions[0]} {serializedResponse.Current.Temperature} °C**__\n\n" +
-                    $"**Luftdruck:** {serializedResponse.Current.Pressure} HPa\n" +
+                    $"**Luftdruck:** {serializedResponse.Current.Pressure} Bar\n" +
                     $"**Wind:** {serializedResponse.Current.WindSpeed} km/h {ParseWindDirection(serializedResponse.Current.WindDir)} ({serializedResponse.Current.WindDegree} °)\n" +
                     $"**Relative Luftfeuchte:** {serializedResponse.Current.Humidity} %",
                     Footer = new()
