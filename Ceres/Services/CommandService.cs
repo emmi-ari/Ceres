@@ -556,11 +556,11 @@ namespace Ceres.Services
                 }
                 #endregion
 
-                if (place == "frankfurt".ToLower() && Context.User.Id == 346295434546774016)
-                    place = "Frankfurt an der Oder";
-
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
+
+                if (place == "frankfurt".ToLower() && Context.User.Id == 346295434546774016)
+                    place = "Frankfurt an der Oder";
                 
                 HttpResponseMessage response = WaitFor(_weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}"));
                 string strResponse = WaitFor(response.Content.ReadAsStringAsync());
