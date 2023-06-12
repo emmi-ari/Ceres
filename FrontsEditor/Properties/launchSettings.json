@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "FrontsEditor": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\emmia\\source\\repos\\CeresBot\\ceres_config.json\"",
+      "workingDirectory": "C:\\Users\\emmia\\source\\repos\\CeresBot\\"
+    }
+  }
+}
