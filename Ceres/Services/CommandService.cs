@@ -487,7 +487,7 @@ namespace Ceres.Services
                     EmbedFieldBuilder uvIndex = new()
                     {
                         Name = "UV Index",
-                        Value = $"{serializedResponse.Current.UvIndex}/7"
+                        Value = $"{ParseUvIndex(serializedResponse.Current.UvIndex)}"
                     };
                     returnValue.Add(feelsLike);
                     returnValue.Add(precip);
@@ -523,6 +523,36 @@ namespace Ceres.Services
                         }
                     }
                     return parsedWindDirection.ToString().TrimEnd('-');
+                }
+
+                static string ParseUvIndex(int uvIndex)
+                {
+                    switch (uvIndex)
+                    {
+                        case 1:
+                        case 2:
+                            return $"{uvIndex} (Niedrig)";
+
+                        case 3:
+                        case 4:
+                        case 5:
+                            return $"{uvIndex} (Mittel)";
+
+                        case 6:
+                        case 7:
+                            return $"{uvIndex} (Hoch)";
+
+                        case 8:
+                        case 9:
+                        case 10:
+                            return $"{uvIndex} (Sehr hoch)";
+
+                        case >= 11:
+                            return $"{uvIndex} (Extrem)";
+
+                        default:
+                            return uvIndex.ToString();
+                    }
                 }
                 #endregion
 
