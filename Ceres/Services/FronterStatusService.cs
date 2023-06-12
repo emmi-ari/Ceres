@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Ceres.Models;
+﻿using Ceres.Models;
 using Ceres.Models.Apparyllis;
 
 using Discord;
@@ -47,10 +46,8 @@ namespace Ceres.Services
             _discord = discord;
             _config = config;
             _logger = new();
-            //Debug.WriteLine("=============== DEBUG ===============");
-            _memberIdRelation = GetMemberIdNames();
-            _customFrontIdRelation = GetCustomFrontIdRelation();
-            // Debug.WriteLine(_customFrontIdRelation[]);
+            _memberIdRelation = GetRelationField(_config["apparyllis.members"]);
+            _customFrontIdRelation = GetRelationField(_config["apparyllis.customFronts"]);
             HttpClient request = new()
             {
                 BaseAddress = new("https://api.apparyllis.com:8443")
@@ -60,27 +57,14 @@ namespace Ceres.Services
             _request = request;
         }
 
-        private Dictionary<string, string> GetCustomFrontIdRelation()
+        private Dictionary<string, string> GetRelationField(string memberIdsDeserialized)
         {
-            string[] memberIdArray = _config["apparyllis.customFronts"].Split(' ');
+            string[] memberIdArray = memberIdsDeserialized.Split(' ');
             Dictionary<string, string> memberIdNames = new(memberIdArray.Length);
             foreach (string memberId in memberIdArray)
             {
                 string[] memberIdAux = memberId.Split('_');
                 memberIdNames.Add(memberIdAux[1].Trim(), memberIdAux[0].Trim());
-                Debug.WriteLine($"Key {memberIdAux[1]}\nValue{memberIdAux[0]}");
-            }
-            return memberIdNames;
-        }
-
-        private Dictionary<string, string> GetMemberIdNames()
-        {
-            string[] memberIdArray = _config["apparyllis.members"].Split(' ');
-            Dictionary<string, string> memberIdNames = new(memberIdArray.Length);
-            foreach (string memberId in memberIdArray)
-            {
-                string[] memberIdAux = memberId.Split('_');
-                memberIdNames.Add(memberIdAux[1], memberIdAux[0]);
             }
             return memberIdNames;
         }
