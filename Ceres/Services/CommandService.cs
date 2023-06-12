@@ -227,14 +227,6 @@ namespace Ceres.Services
                 return ReplyAsync((isStatusSet ? "Dis" : "En") + "abled status");
             }
 
-            [Command("egg")]
-            [Alias("ei", "eckeaberaufhessisch")]
-            [Summary("egg (engl. \"Ei\"")]
-            public Task Egg()
-            {
-                return Context.Channel.SendFileAsync(@"C:\Users\Emmi\Documents\ähm\ei.png");
-            }
-
             [Command("react")]
             [Summary("Adds a reaction to a message")]
             public Task AddReaction(string emote, string messageId = null)
@@ -334,8 +326,8 @@ namespace Ceres.Services
             public Task Folder()
             {
                 FileInfo[] folderFiles = _folderDir.GetFiles()
-                                                   .Where(file => file.Name != "ei.png" || !(file.Attributes.HasFlag(FileAttributes.System) || file.Attributes.HasFlag(FileAttributes.Directory)))
-                                                   .ToArray();
+                    .Where(file => file.Name != "ei.png" || !(file.Attributes.HasFlag(FileAttributes.System) || file.Attributes.HasFlag(FileAttributes.Directory)))
+                    .ToArray();
                 int rand = _unsafeRng.Next(0, folderFiles.Length);
                 string filePath = folderFiles[rand].FullName;
                 string text = filePath switch
@@ -357,6 +349,7 @@ namespace Ceres.Services
             [Alias("Emote", "Gif", "FuckNitro")]
             public Task EmoteToGif(string providedEmoteName = "")
             {
+                #region Local function(s)
                 static void ConvertEmoteToGif(string emoteUrl, string emoteName, bool emoteIsAnimated)
                 {
                     // Download emote
@@ -388,6 +381,7 @@ namespace Ceres.Services
                         ffmpeg.Dispose();
                     }
                 }
+                #endregion
 
                 IDMChannel userDM = WaitFor(((SocketGuildUser)Context.Message.Author).CreateDMChannelAsync());
 
@@ -626,6 +620,7 @@ namespace Ceres.Services
                 await base.AfterExecuteAsync(command);
             }
             #endregion
+
             #region Static
             static internal void AddEmote(SocketGuild guild, out GuildEmote emote, string emoteName, string emoteUrl = null, Attachment attachment = null)
             {
