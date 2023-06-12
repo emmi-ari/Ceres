@@ -561,13 +561,9 @@ namespace Ceres.Services
 
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
-
-                HttpResponseMessage response = Task.Run(async () =>
-                {
-                    return await _weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}");
-                }).Result;
-
-                string strResponse = Task.Run(async () => { return await response.Content.ReadAsStringAsync(); }).Result;
+                
+                HttpResponseMessage response = WaitFor(_weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}"));
+                string strResponse = WaitFor(response.Content.ReadAsStringAsync());
 
                 WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
                 string location = place.ToLower() == "frankfurt" ? "Frankfurt am Main" : serializedResponse.Location.Name;
