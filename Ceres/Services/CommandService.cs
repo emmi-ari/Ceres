@@ -487,7 +487,7 @@ namespace Ceres.Services
                     EmbedFieldBuilder uvIndex = new()
                     {
                         Name = "UV Index",
-                        Value = $"{serializedResponse.Current.UvIndex}"
+                        Value = $"{serializedResponse.Current.UvIndex}/7"
                     };
                     returnValue.Add(feelsLike);
                     returnValue.Add(precip);
