@@ -24,10 +24,7 @@ namespace Ceres.Services
 
         private async void TriggerStatusRefresh()
         {
-            do
-            {
-                await _commonFronterStatus.SetFronterStatusAsync();
-            }
+            do { await _commonFronterStatus.SetFronterStatusAsync(); }
             while (await _timer.WaitForNextTickAsync());
         }
     }
