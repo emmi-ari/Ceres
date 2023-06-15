@@ -91,7 +91,6 @@ namespace Ceres.Services
 
         private async Task<ApparyllisModel> GetFrontStatusAsync()
         {
-            
             HttpResponseMessage frontingStatusResponse = await _request.GetAsync("/v1/fronters/");
             string response = await frontingStatusResponse.Content.ReadAsStringAsync();
             response = "{\"response\":" + response + "}"; // Because why would an API give valid JSON as response, am I right?
@@ -127,21 +126,22 @@ namespace Ceres.Services
                 ApparyllisContentModel fronter = responseSerialized.Response[i]?.Content;
                 if (fronter is null)
                     continue;
+
+                try
+                {
+                    var test = _memberIdRelation[fronter.Member];
+                }
+                catch (KeyNotFoundException)
+                {
                     try
                     {
-                        var test = _memberIdRelation[fronter.Member];
+                        var test = _customFrontIdRelation[fronter.Member];
                     }
-                    catch (KeyNotFoundException)
-                    {
-                        try
-                        {
-                            var test = _customFrontIdRelation[fronter.Member];
-                        }
-                        catch (KeyNotFoundException) { continue; }
+                    catch (KeyNotFoundException) { continue; }
 
-                        serializedCustomFrontList.Add(new(_customFrontIdRelation[fronter.Member], fronter.StartTime, fronter.EndTime));
+                    serializedCustomFrontList.Add(new(_customFrontIdRelation[fronter.Member], fronter.StartTime, fronter.EndTime));
                     continue;
-                    }
+                }
 
                 serializedFronterList.Add(new (_memberIdRelation[fronter.Member], fronter.StartTime, fronter.EndTime));
             }
