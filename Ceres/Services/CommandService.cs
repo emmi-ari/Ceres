@@ -411,14 +411,8 @@ namespace Ceres.Services
 
                         foreach (ITag tag in emotesInMessage)
                         {
-                            try
-                            {
-                                await userDM.SendFilesAsync(attachments);
-                            }
-                            catch (Exception)
-                            {
-                                await Context.Channel.SendFilesAsync(attachments);
-                            }
+                            try { await userDM.SendFilesAsync(attachments); }
+                            catch (Exception) { await Context.Channel.SendFilesAsync(attachments); }
                         }
                     });
                 }
