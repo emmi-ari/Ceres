@@ -68,7 +68,7 @@ namespace Ceres.Services
 
         internal async Task<string> SetFronterStatusAsync()
         {
-            List<FrontMemberInfos>[] frontInfos = await GetFrontersList();
+            List<FrontMemberInfos>[] frontInfos = ParseMembers(await GetFrontStatusAsync());
             var serializedFronterList = frontInfos[0];
             var serializedCustomFrontList = frontInfos[1];
             string statusMessage = string.Empty;
@@ -105,12 +105,6 @@ namespace Ceres.Services
             await _logger.OnLogAsync(new(severity, nameof(this.GetFrontStatusAsync), logMessage));
 
             return serializedResponse;
-        }
-
-        private async Task<List<FrontMemberInfos>[]> GetFrontersList()
-        {
-            ApparyllisModel response = await GetFrontStatusAsync();
-            return ParseMembers(response);
         }
 
         private List<FrontMemberInfos>[] ParseMembers(ApparyllisModel responseSerialized)
