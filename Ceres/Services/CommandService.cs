@@ -52,24 +52,18 @@ namespace Ceres.Services
             #region Restrict others from using these reaction emotes
             if (arg3.Emote is not Emote || arg3.UserId == 233018119856062466) return Task.CompletedTask;
 
-            Emote reactionEmote = (Emote)arg3.Emote;
-            switch (reactionEmote.Id)
+            SocketGuild emoteGuild = _client.Guilds.Where(x => x.Id == 1034142544642183178).First();
+            List<ulong> emoteIds = new(emoteGuild.Emotes.Count);
+            foreach (GuildEmote emote in emoteGuild.Emotes)
             {
-                case 1034143711195582554:
-                case 1034143897271676959:
-                case 1034143902548107365:
-                case 1034143907690332251:
-                case 1034143824433401877:
-                case 1034143757815271534:
-                case 1034143913524600864:
-                case 1034143781643108382:
-                case 1039099437357735936:
-                    IMessage reactedMessage = WaitFor(arg2.Value.GetMessageAsync(arg3.MessageId));
-                    return reactedMessage.RemoveReactionAsync(reactionEmote, arg3.UserId);
-
-                default:
-                    return Task.CompletedTask;
+                emoteIds.Add(emote.Id);
             }
+
+            #region Restrict others from using these reaction emotes
+            Emote reactionEmote = (Emote)arg3.Emote;
+            return emoteIds.Contains(reactionEmote.Id)
+                ? WaitFor(arg2.Value.GetMessageAsync(arg3.MessageId)).RemoveReactionAsync(reactionEmote, arg3.UserId)
+                : Task.CompletedTask;
             #endregion
         }
 
@@ -216,6 +210,7 @@ namespace Ceres.Services
             [Command("ToggleStatus")]
             [Alias("toggle")]
             [Summary("Enables or disables Ceres' status message")]
+            [RequireOwner(ErrorMessage = "No. Fuck off.")]
             public Task ToggleStatus()
             {
                 bool isStatusSet = !string.IsNullOrEmpty(_client.CurrentUser.Activities.FirstOrDefault()?.Name);
