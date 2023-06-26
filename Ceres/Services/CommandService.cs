@@ -49,7 +49,6 @@ namespace Ceres.Services
 
         private Task OnReactionAdded(Cacheable<IUserMessage, ulong> arg1, Cacheable<IMessageChannel, ulong> arg2, SocketReaction arg3)
         {
-            #region Restrict others from using these reaction emotes
             if (arg3.Emote is not Emote || arg3.UserId == 233018119856062466) return Task.CompletedTask;
 
             SocketGuild emoteGuild = _client.Guilds.Where(x => x.Id == 1034142544642183178).First();
