@@ -83,12 +83,12 @@ namespace Ceres.Services
             int prefixLength = 0;
 
             #region Reminder emphasizer
-            if (msg.Embeds != null || msg.Embeds.Count != 0)
+            if (msg.Author.Id == 526166150749618178 && (msg.Embeds != null || msg.Embeds.Count != 0))
             {
                 IReadOnlyCollection<Embed> msgEmbed = msg.Embeds;
                 string embedDescription = msgEmbed?.FirstOrDefault()?.Description;
                 embedDescription ??= string.Empty;
-                if (msg.Author.Id == 526166150749618178 && embedDescription.Contains("Reminder from"))
+                if (embedDescription.Contains("Reminder from"))
                 {
                     await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
                     return;
