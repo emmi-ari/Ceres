@@ -212,6 +212,8 @@ namespace Ceres.Services
             [RequireOwner(ErrorMessage = "No. Fuck off.")]
             public Task ToggleStatus()
             {
+                if (Context.User.Id is not 233018119856062466 or 320989312390922240) return ReplyAsync("No. Fuck off.");
+
                 bool isStatusSet = !string.IsNullOrEmpty(_client.CurrentUser.Activities.FirstOrDefault()?.Name);
                 if (isStatusSet)
                     _client.SetActivityAsync(null);
