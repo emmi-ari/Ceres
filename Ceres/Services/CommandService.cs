@@ -209,7 +209,6 @@ namespace Ceres.Services
             [Command("ToggleStatus")]
             [Alias("toggle")]
             [Summary("Enables or disables Ceres' status message")]
-            [RequireOwner(ErrorMessage = "No. Fuck off.")]
             public Task ToggleStatus()
             {
                 if (Context.User.Id is not 233018119856062466 or 320989312390922240) return ReplyAsync("No. Fuck off.");
@@ -225,37 +224,30 @@ namespace Ceres.Services
 
             [Command("react")]
             [Summary("Adds a reaction to a message")]
-            public Task AddReaction(string emote, string messageId = null)
+            public Task AddReaction(string emote, string locationLink)
             {
-                IMessage msg = null;
-                if (messageId != null)
+                ulong guildId;
+                ulong channelId;
+                ulong messageId;
+
+                Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
+                if (match.Groups.Count >= 2)
                 {
-                    bool channelValid = ulong.TryParse(messageId, out ulong messageIdUlong);
-                    msg = WaitFor(Context.Channel.GetMessageAsync(messageIdUlong));
-                    if (msg == null) return CommandError(CeresCommand.AddReaction, "Error: **Command must be executed in the same channel**");
-                    if (!channelValid) return CommandError(CeresCommand.AddReaction, "Error: **Something's wrong with the message ID**");
+                    string[] ids = match.Groups[0].Value.Replace('/', ',').TrimStart(',').Split(',');
+                    guildId = Convert.ToUInt64(ids[0]);
+                    channelId = Convert.ToUInt64(ids[1]);
+                    messageId = Convert.ToUInt64(ids[2]);
                 }
                 else
-                {
-                    if (Context.Message.Reference == null)
-                        return CommandError(CeresCommand.AddReaction, "Error: **No message ID specified and not replied to any message**");
+                    return ReplyAsync("Make sure it's a discord link with three (slash seperated) IDs");
 
-                    msg = WaitFor(Context.Channel.GetMessageAsync((ulong)Context.Message.Reference.MessageId));
-                }
+                IMessage msg = WaitFor(((ISocketMessageChannel)_client?.GetGuild(guildId)?.GetChannel(channelId))?.GetMessageAsync(messageId));
+                if (msg is null) return ReplyAsync("The link is either inaccessible or not a valid message link.");
 
-                dynamic reaction = null;
-                Emote emoteReaction = null;
-                Emoji emojiReaction = null;
-                bool emoteValid = Emote.TryParse(emote, out emoteReaction);
-                if (!emoteValid)
-                {
-                    emojiReaction = new Emoji(emote);
-                    reaction = emojiReaction;
-                }
-                else
-                {
-                    reaction = emoteReaction;
-                }
+                bool emoteValid = Emote.TryParse(emote, out Emote emoteReaction);
+                dynamic reaction = !emoteValid 
+                    ? new Emoji(emote)
+                    : emoteReaction;
 
                 return msg.AddReactionAsync(reaction);
             }
@@ -274,10 +266,7 @@ namespace Ceres.Services
                     if (ids.Length == 3) messageId = Convert.ToUInt64(ids[2]);
                 }
                 else
-                {
                     return Context.Channel.SendMessageAsync("Make sure it's a discord link with at least two (slash seperated) IDs");
-                }
-
                 #endregion
 
                 #region Guild ID parsing
