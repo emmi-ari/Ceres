@@ -431,7 +431,7 @@ namespace Ceres.Services
 
             [Command("weather")]
             [Alias("wetter", "w")]
-            public Task Weather(string place)
+            public Task Weather([Remainder]string place)
             {
                 #region Local function(s)
                 static List<EmbedFieldBuilder> GetEmbedFields(WeatherStackModel serializedResponse)
@@ -536,9 +536,7 @@ namespace Ceres.Services
                     place = "Frankfurt an der Oder";
                 
                 HttpResponseMessage response = WaitFor(_weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}"));
-                string strResponse = WaitFor(response.Content.ReadAsStringAsync());
-
-                WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(strResponse);
+                WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(WaitFor(response.Content.ReadAsStringAsync()));
                 string location = place.ToLower() == "frankfurt" ? "Frankfurt am Main" : serializedResponse.Location.Name;
 
                 EmbedBuilder embed = new()
@@ -559,6 +557,30 @@ namespace Ceres.Services
                 };
 
                 return ReplyAsync(embed: embed.Build());
+            }
+
+            [Command("defaultWeather")]
+            [Alias("dw")]
+            [RequireOwner(ErrorMessage = "Not implemented")]
+            public Task UserSetDefaultWeatherLocation([Remainder]string place)
+            {
+                if (string.IsNullOrEmpty(place))
+                    throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
+
+                HttpResponseMessage response = WaitFor(_weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}"));
+                WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(WaitFor(response.Content.ReadAsStringAsync()));
+
+                if (serializedResponse.Current is null && serializedResponse.Location is null)
+                    return ReplyAsync($"{place} was not found by the WeatherStack API.");
+
+                dynamic defaultsJson = GetDefaultWeatherJson();
+
+                return Task.CompletedTask;
+            }
+
+            private dynamic GetDefaultWeatherJson()
+            {
+                throw new NotImplementedException(nameof(GetDefaultWeatherJson));
             }
 
             private Task CommandError(CeresCommand command, string errorMsg)
@@ -583,7 +605,7 @@ namespace Ceres.Services
 
                 await base.BeforeExecuteAsync(command);
             }
-
+            
             protected override async Task AfterExecuteAsync(CommandInfo command)
             {
                 if (command.Name == "EmoteToGif")
