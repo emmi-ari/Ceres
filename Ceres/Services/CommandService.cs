@@ -168,6 +168,7 @@ namespace Ceres.Services
             private readonly Random _unsafeRng;
             private readonly Emoji _waitEmote = new("⏳");
             private readonly HttpClient _weatherStackApi;
+            private readonly string _userWeatherConfigPath = Path.Combine(AppContext.BaseDirectory, "user_weather_defaults.conf");
 
             public CommandsCollection(DiscordSocketClient client, CommandService commands, IConfigurationRoot config, IServiceProvider provider)
             {
@@ -245,7 +246,7 @@ namespace Ceres.Services
                 if (msg is null) return ReplyAsync("The link is either inaccessible or not a valid message link.");
 
                 bool emoteValid = Emote.TryParse(emote, out Emote emoteReaction);
-                dynamic reaction = !emoteValid 
+                dynamic reaction = !emoteValid
                     ? new Emoji(emote)
                     : emoteReaction;
 
@@ -431,7 +432,7 @@ namespace Ceres.Services
 
             [Command("weather")]
             [Alias("wetter", "w")]
-            public Task Weather([Remainder]string place)
+            public Task Weather([Remainder] string place = "")
             {
                 #region Local function(s)
                 static List<EmbedFieldBuilder> GetEmbedFields(WeatherStackModel serializedResponse)
@@ -527,14 +528,30 @@ namespace Ceres.Services
                             return uvIndex.ToString();
                     }
                 }
+
+                async Task<string> GetDefaultPlaceForUserId(ulong uid)
+                {
+                    string defaultLocationForUser = null;
+                    List<Dictionary<ulong, string>> defaultWeatherConfig = await GetDefaultWeatherConfig();
+                    Dictionary<ulong, string> x = defaultWeatherConfig?.Where(entry => entry.ContainsKey(Context.User.Id)).FirstOrDefault();
+                    x?.TryGetValue(uid, out defaultLocationForUser);
+                    return defaultLocationForUser;
+                }
                 #endregion
 
-                if (string.IsNullOrEmpty(place))
-                    throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
+                string defaultPlaceForUser = WaitFor(GetDefaultPlaceForUserId(Context.User.Id));
+
+                if (string.IsNullOrEmpty(place) && string.IsNullOrEmpty(defaultPlaceForUser))
+                    return ReplyAsync($"You have to provide a place name if you haven't set a default place with {_config["ceres.prefix"]}defaultWeather yet.");
+
+                if (place == string.Empty && !string.IsNullOrWhiteSpace(defaultPlaceForUser))
+                    place = defaultPlaceForUser;
+                else
+                    return ReplyAsync("Something went horribly wrong, though I have no idea what. Ceres.Services.CommandHandler.CommandsCollection.Weather(string)");
 
                 if (place == "frankfurt".ToLower() && Context.User.Id == 346295434546774016)
                     place = "Frankfurt an der Oder";
-                
+
                 HttpResponseMessage response = WaitFor(_weatherStackApi.GetAsync($"current?access_key={_config["weatherstack.token"]}&query={place}"));
                 WeatherStackModel serializedResponse = JsonConvert.DeserializeObject<WeatherStackModel>(WaitFor(response.Content.ReadAsStringAsync()));
                 string location = place.ToLower() == "frankfurt" ? "Frankfurt am Main" : serializedResponse.Location.Name;
@@ -562,7 +579,7 @@ namespace Ceres.Services
             [Command("defaultWeather")]
             [Alias("dw")]
             [RequireOwner(ErrorMessage = "Not implemented")]
-            public Task UserSetDefaultWeatherLocation([Remainder]string place)
+            public Task UserSetDefaultWeatherLocation([Remainder] string place = "")
             {
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
@@ -573,15 +590,83 @@ namespace Ceres.Services
                 if (serializedResponse.Current is null && serializedResponse.Location is null)
                     return ReplyAsync($"{place} was not found by the WeatherStack API.");
 
-                dynamic defaultsJson = GetDefaultWeatherJson();
+                List<Dictionary<ulong, string>> defaultWeatherConfig = WaitFor(GetDefaultWeatherConfig());
+                bool modifyExistentDefaultValue = defaultWeatherConfig.Where(entry => entry.ContainsKey(Context.User.Id)).Any();
+                try
+                {
+                    ChangeDefaultWeatherConfigForUser(Context.User.Id, place, modifyExistentDefaultValue);
+                    return ReplyAsync($"Changed your default location to {place}.");
+                }
+                catch (Exception ex)
+                {
+                    return ReplyAsync($"Something went horribly wrong. Maybe this text will help: {ex.Message} (0x{ex.HResult:X8})");
+                }
+            }
 
+            private async Task<List<Dictionary<ulong, string>>> GetDefaultWeatherConfig()
+            {
+                List<Dictionary<ulong, string>> userWeatherConfig = new();
+                if (File.Exists(_userWeatherConfigPath))
+                {
+                    string[] configLines = await File.ReadAllLinesAsync(_userWeatherConfigPath);
+                    foreach (string line in configLines)
+                    {
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Dictionary<ulong, string> entry = new();
+                        dynamic[] lineData = line.Split(',');
+                        entry.Add(ulong.Parse(lineData[0]), lineData[1]);
+                        userWeatherConfig.Add(entry);
+                    }
+                }
+                else
+                    await File.WriteAllTextAsync(_userWeatherConfigPath, null);
+
+                return userWeatherConfig;
+            }
+
+            private void ChangeDefaultWeatherConfigForUser(ulong uid, string place, bool modify)
+            {
+                if (!File.Exists(_userWeatherConfigPath)) throw new FileLoadException("File doesn't exist or is inaccessible", _userWeatherConfigPath);
+                if (modify)
+                {
+                    string file = File.ReadAllText(_userWeatherConfigPath);
+                    string[] replacementLine = Regex.Replace(file, @$"({uid},)[\w ]+", $"$1{place}", RegexOptions.Multiline)
+                        .Split(Environment.NewLine);
+                    File.WriteAllLines(_userWeatherConfigPath, replacementLine.Where(line => !string.IsNullOrEmpty(line)));
+                }
+                else
+                {
+                    List<string> file = File.ReadAllLines(_userWeatherConfigPath).ToList();
+                    file.Add($"{uid},{place}");
+                    File.WriteAllLines(_userWeatherConfigPath, file.Where(line => !string.IsNullOrEmpty(line)));
+                }
+            }
+
+#if false
+            // lmao, maybe someday
+
+            [Command("evalPython")]
+            [Alias("eval")]
+            [RequireOwner(ErrorMessage = "no")]
+            public Task EvalPythonExpression([Remainder]string expression)
+            {
+                ProcessStartInfo python = new("python3", expression)
+                {
+                    RedirectStandardOutput = true
+                };
+                using Process process = Process.Start(python);
+                process.BeginOutputReadLine();
+                process.OutputDataReceived += Process_OutputDataReceived;
+                process.WaitForExit();
                 return Task.CompletedTask;
             }
 
-            private dynamic GetDefaultWeatherJson()
+            private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
             {
-                throw new NotImplementedException(nameof(GetDefaultWeatherJson));
+                throw new NotImplementedException();
             }
+#endif
 
             private Task CommandError(CeresCommand command, string errorMsg)
             {
@@ -605,7 +690,7 @@ namespace Ceres.Services
 
                 await base.BeforeExecuteAsync(command);
             }
-            
+
             protected override async Task AfterExecuteAsync(CommandInfo command)
             {
                 if (command.Name == "EmoteToGif")
