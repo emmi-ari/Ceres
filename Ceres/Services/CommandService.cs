@@ -79,8 +79,7 @@ namespace Ceres.Services
             if (msg.Author.Id == 526166150749618178 && (msg.Embeds != null || msg.Embeds.Count != 0))
             {
                 IReadOnlyCollection<Embed> msgEmbed = msg.Embeds;
-                string embedDescription = msgEmbed?.FirstOrDefault()?.Description;
-                embedDescription ??= string.Empty;
+                string embedDescription = msgEmbed?.FirstOrDefault()?.Description ?? string.Empty;
                 if (embedDescription.Contains("Reminder from"))
                 {
                     await context.Channel.SendMessageAsync("<a:DinkDonk:1025546103447355464>");
@@ -397,8 +396,8 @@ namespace Ceres.Services
 
                         foreach (ITag tag in emotesInMessage)
                         {
-                            try { await userDM.SendFilesAsync(attachments); }
-                            catch (Exception) { await Context.Channel.SendFilesAsync(attachments); }
+                            try { await userDM.SendFilesAsync(attachments); } // Try sending a DM
+                            catch (Exception) { await Context.Channel.SendFilesAsync(attachments); } // But send in channel if user's DMs are closed for Ceres
                         }
                     });
                 }
@@ -437,38 +436,34 @@ namespace Ceres.Services
                 #region Local function(s)
                 static List<EmbedFieldBuilder> GetEmbedFields(WeatherStackModel serializedResponse)
                 {
-                    List<EmbedFieldBuilder> returnValue = new(5);
-                    EmbedFieldBuilder cloudCover = new()
+                    return new(5)
                     {
-                        Name = "Bedeckung",
-                        Value = $"{serializedResponse.Current.Cloudcover} %"
+                        new()
+                        {
+                            Name = "Bedeckung",
+                            Value = $"{serializedResponse.Current.Cloudcover} %"
+                        },
+                        new()
+                        {
+                            Name = "Feels like",
+                            Value = $"{serializedResponse.Current.Feelslike} °C"
+                        },
+                        new()
+                        {
+                            Name = "Uhrzeit",
+                            Value = $"{serializedResponse.Current.ObservationTime}"
+                        },
+                        new()
+                        {
+                            Name = "Niederschlagswahrscheinlichkeit",
+                            Value = $"{serializedResponse.Current.Precip} %"
+                        },
+                        new()
+                        {
+                            Name = "UV Index",
+                            Value = $"{ParseUvIndex(serializedResponse.Current.UvIndex)}"
+                        }
                     };
-                    EmbedFieldBuilder feelsLike = new()
-                    {
-                        Name = "Feels like",
-                        Value = $"{serializedResponse.Current.Feelslike} °C"
-                    };
-                    EmbedFieldBuilder observationTime = new()
-                    {
-                        Name = "Uhrzeit",
-                        Value = $"{serializedResponse.Current.ObservationTime}"
-                    };
-                    EmbedFieldBuilder precip = new()
-                    {
-                        Name = "Niederschlagswahrscheinlichkeit",
-                        Value = $"{serializedResponse.Current.Precip} %"
-                    };
-                    EmbedFieldBuilder uvIndex = new()
-                    {
-                        Name = "UV Index",
-                        Value = $"{ParseUvIndex(serializedResponse.Current.UvIndex)}"
-                    };
-                    returnValue.Add(feelsLike);
-                    returnValue.Add(precip);
-                    returnValue.Add(cloudCover);
-                    returnValue.Add(uvIndex);
-                    returnValue.Add(observationTime);
-                    return returnValue;
                 }
 
                 static string ParseWindDirection(string abbreviation)
@@ -501,40 +496,23 @@ namespace Ceres.Services
 
                 static string ParseUvIndex(int uvIndex)
                 {
-                    switch (uvIndex)
+                    return uvIndex switch
                     {
-                        case 1:
-                        case 2:
-                            return $"{uvIndex} (Niedrig)";
-
-                        case 3:
-                        case 4:
-                        case 5:
-                            return $"{uvIndex} (Mittel)";
-
-                        case 6:
-                        case 7:
-                            return $"{uvIndex} (Hoch)";
-
-                        case 8:
-                        case 9:
-                        case 10:
-                            return $"{uvIndex} (Sehr hoch)";
-
-                        case >= 11:
-                            return $"{uvIndex} (Extrem)";
-
-                        default:
-                            return uvIndex.ToString();
-                    }
+                        1 or 2          => $"{uvIndex} (Niedrig)",
+                        3 or 4 or 5     => $"{uvIndex} (Mittel)",
+                        6 or 7          => $"{uvIndex} (Hoch)",
+                        8 or 9 or 10    => $"{uvIndex} (Sehr hoch)",
+                        >= 11           => $"{uvIndex} (Extrem)",
+                        _               => $"{uvIndex}",
+                    };
                 }
 
                 async Task<string> GetDefaultPlaceForUserId(ulong uid)
                 {
                     string defaultLocationForUser = null;
                     List<Dictionary<ulong, string>> defaultWeatherConfig = await GetDefaultWeatherConfig();
-                    Dictionary<ulong, string> x = defaultWeatherConfig?.Where(entry => entry.ContainsKey(Context.User.Id)).FirstOrDefault();
-                    x?.TryGetValue(uid, out defaultLocationForUser);
+                    Dictionary<ulong, string> userSpecificLocationConfig = defaultWeatherConfig?.Where(entry => entry.ContainsKey(Context.User.Id)).FirstOrDefault();
+                    userSpecificLocationConfig?.TryGetValue(uid, out defaultLocationForUser);
                     return defaultLocationForUser;
                 }
                 #endregion
@@ -542,7 +520,7 @@ namespace Ceres.Services
                 string defaultPlaceForUser = WaitFor(GetDefaultPlaceForUserId(Context.User.Id));
 
                 if (string.IsNullOrEmpty(place) && string.IsNullOrEmpty(defaultPlaceForUser))
-                    return ReplyAsync($"You have to provide a place name if you haven't set a default place with {_config["ceres.prefix"]}defaultWeather yet.");
+                    return ReplyAsync($"You have to provide a place name if you haven't set a default place with {_config["ceres.prefix"]}defaultWeather yet. That will be saved in an unencrypted CSV file, where the Discord User ID and the provided location will be saved.");
 
                 if (place == string.Empty && !string.IsNullOrWhiteSpace(defaultPlaceForUser))
                     place = defaultPlaceForUser;
@@ -559,7 +537,7 @@ namespace Ceres.Services
                 EmbedBuilder embed = new()
                 {
                     Title = $"Wetter für {location}, {serializedResponse.Location.Region}, {serializedResponse.Location.Country}",
-                    Color = Color.DarkBlue,
+                    Color = new(45, 122, 185),
                     Fields = GetEmbedFields(serializedResponse),
                     ThumbnailUrl = serializedResponse.Current.WeatherIcons[0],
                     Description = $"__**{serializedResponse.Current.WeatherDescriptions[0]} {serializedResponse.Current.Temperature} °C**__\n\n" +
@@ -581,6 +559,26 @@ namespace Ceres.Services
             [RequireOwner(ErrorMessage = "Not implemented")]
             public Task UserSetDefaultWeatherLocation([Remainder] string place = "")
             {
+                #region Local function(s)
+                void ChangeDefaultWeatherConfigForUser(ulong uid, string place, bool modify)
+                {
+                    if (!File.Exists(_userWeatherConfigPath)) throw new FileLoadException("File doesn't exist or is inaccessible", _userWeatherConfigPath);
+                    if (modify)
+                    {
+                        string file = File.ReadAllText(_userWeatherConfigPath);
+                        string[] replacementLine = Regex.Replace(file, @$"({uid},)[\w ]+", $"$1{place}", RegexOptions.Multiline)
+                            .Split(Environment.NewLine);
+                        File.WriteAllLines(_userWeatherConfigPath, replacementLine.Where(line => !string.IsNullOrEmpty(line)));
+                    }
+                    else // Append
+                    {
+                        List<string> file = File.ReadAllLines(_userWeatherConfigPath).ToList();
+                        file.Add($"{uid},{place}");
+                        File.WriteAllLines(_userWeatherConfigPath, file.Where(line => !string.IsNullOrEmpty(line)));
+                    }
+                }
+                #endregion
+
                 if (string.IsNullOrEmpty(place))
                     throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
 
@@ -623,24 +621,6 @@ namespace Ceres.Services
                     await File.WriteAllTextAsync(_userWeatherConfigPath, null);
 
                 return userWeatherConfig;
-            }
-
-            private void ChangeDefaultWeatherConfigForUser(ulong uid, string place, bool modify)
-            {
-                if (!File.Exists(_userWeatherConfigPath)) throw new FileLoadException("File doesn't exist or is inaccessible", _userWeatherConfigPath);
-                if (modify)
-                {
-                    string file = File.ReadAllText(_userWeatherConfigPath);
-                    string[] replacementLine = Regex.Replace(file, @$"({uid},)[\w ]+", $"$1{place}", RegexOptions.Multiline)
-                        .Split(Environment.NewLine);
-                    File.WriteAllLines(_userWeatherConfigPath, replacementLine.Where(line => !string.IsNullOrEmpty(line)));
-                }
-                else
-                {
-                    List<string> file = File.ReadAllLines(_userWeatherConfigPath).ToList();
-                    file.Add($"{uid},{place}");
-                    File.WriteAllLines(_userWeatherConfigPath, file.Where(line => !string.IsNullOrEmpty(line)));
-                }
             }
 
 #if false
