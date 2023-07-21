@@ -51,7 +51,7 @@ namespace Ceres
             {
                 LogLevel = logSeverity,
                 MessageCacheSize = 50,
-                GatewayIntents = (GatewayIntents)0x7EBD
+                GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildEmojis | GatewayIntents.MessageContent | GatewayIntents.DirectMessages | GatewayIntents.AllUnprivileged
             });
             client.Log += logger.OnLogAsync;
 

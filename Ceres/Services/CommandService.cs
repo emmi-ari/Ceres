@@ -73,7 +73,7 @@ namespace Ceres.Services
 
             SocketCommandContext context = new(_client, msg);
             string prefix = _config["ceres.prefix"];
-            int prefixLength = 0;
+            int prefixLength = 1;
 
             #region Reminder emphasizer
             if (msg.Author.Id == 526166150749618178 && (msg.Embeds != null || msg.Embeds.Count != 0))
