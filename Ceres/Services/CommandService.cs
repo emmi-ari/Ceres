@@ -498,12 +498,12 @@ namespace Ceres.Services
                 {
                     return uvIndex switch
                     {
-                        1 or 2          => $"{uvIndex} (Niedrig)",
-                        3 or 4 or 5     => $"{uvIndex} (Mittel)",
-                        6 or 7          => $"{uvIndex} (Hoch)",
-                        8 or 9 or 10    => $"{uvIndex} (Sehr hoch)",
-                        >= 11           => $"{uvIndex} (Extrem)",
-                        _               => $"{uvIndex}",
+                        1 or 2 => $"{uvIndex} (Niedrig)",
+                        3 or 4 or 5 => $"{uvIndex} (Mittel)",
+                        6 or 7 => $"{uvIndex} (Hoch)",
+                        8 or 9 or 10 => $"{uvIndex} (Sehr hoch)",
+                        >= 11 => $"{uvIndex} (Extrem)",
+                        _ => $"{uvIndex}",
                     };
                 }
 
@@ -524,8 +524,6 @@ namespace Ceres.Services
 
                 if (place == string.Empty && !string.IsNullOrWhiteSpace(defaultPlaceForUser))
                     place = defaultPlaceForUser;
-                else
-                    return ReplyAsync("Something went horribly wrong, though I have no idea what. Ceres.Services.CommandHandler.CommandsCollection.Weather(string)");
 
                 if (place == "frankfurt".ToLower() && Context.User.Id == 346295434546774016)
                     place = "Frankfurt an der Oder";
