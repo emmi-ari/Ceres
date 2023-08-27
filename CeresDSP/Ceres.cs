@@ -1,26 +1,62 @@
 ﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
+
+using Newtonsoft.Json;
+
+using System.Text;
+using System.Text.Json.Nodes;
 
 namespace CeresDSP
 {
-    internal class Ceres
+    public class Ceres
     {
-        public DiscordClient _client;
+        public DiscordClient Client { get; private set; }
+
+        public InteractivityExtension Interactivity { get; private set; }
+
+        public CommandsNextExtension Commands { get; private set; }
+
+        public Configuration Configuration { get; init; }
+
 
         public Ceres()
         {
-            _client = new(new DiscordConfiguration()
+            using FileStream configFS = File.OpenRead("config.json");
+            using StreamReader configReader = new(configFS, new UTF8Encoding(false));
+            
+            Configuration = JsonConvert.DeserializeObject<Configuration>(configReader.ReadToEnd());
+            Client = new(new DiscordConfiguration()
             {
-                Token = File.ReadAllText(@"C:\Users\emmia\Desktop\token"),
+                Token = Configuration.Token,
                 TokenType = TokenType.Bot,
+                AutoReconnect = true,
                 Intents = (DiscordIntents)0x1FFFF
             });
+
+            Client.UseInteractivity(new()
+            {
+                Timeout = TimeSpan.FromMinutes(1)
+            });
+
+            CommandsNextConfiguration cmdConfig = new()
+            {
+                StringPrefixes = new string[1] { Configuration.Prefix },
+                EnableMentionPrefix = false,
+                EnableDms = true,
+                CaseSensitive = false,
+                EnableDefaultHelp = false
+            };
+
+            Commands = Client.UseCommandsNext(cmdConfig);
+            Commands.RegisterCommands<MiscCommands>();
         }
 
-        private static Task<int> CustomPrefixPredicate(DiscordMessage msg)
+        public async Task ConnectAsync()
         {
-            var guild = DB.Guilds.GetGuild(msg.Channel.Guild);
-            return msg.Content.StartsWith(guild.Prefix) ? Task.FromResult(guild.Prefix.Length) : Task.FromResult(-1);
+            await Client.ConnectAsync();
         }
     }
 }

@@ -365,5 +365,6 @@ FodyWeavers.xsd
 #Custom
 *token
 ceres_config.json
+config.json
 # leave us and our supressions alone
 GlobalSupressions.cs
