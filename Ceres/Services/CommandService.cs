@@ -4,6 +4,8 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
+// using Microsoft.CodeAnalysis.CSharp.Scripting;
+// using Microsoft.CodeAnalysis.Scripting; // how??
 using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json;
@@ -51,6 +53,7 @@ namespace Ceres.Services
         {
             if (arg3.Emote is not Emote || arg3.UserId == 233018119856062466) return Task.CompletedTask;
 
+            // Get a list of all emotes of guild 1034142544642183178 and store them in emoteIds
             SocketGuild emoteGuild = _client.Guilds.Where(x => x.Id == 1034142544642183178).First();
             List<ulong> emoteIds = new(emoteGuild.Emotes.Count);
             foreach (GuildEmote emote in emoteGuild.Emotes)
@@ -60,8 +63,9 @@ namespace Ceres.Services
 
             #region Restrict others from using these reaction emotes
             Emote reactionEmote = (Emote)arg3.Emote;
+            IMessage message = WaitFor(arg2.Value.GetMessageAsync(arg3.MessageId));
             return emoteIds.Contains(reactionEmote.Id)
-                ? WaitFor(arg2.Value.GetMessageAsync(arg3.MessageId)).RemoveReactionAsync(reactionEmote, arg3.UserId)
+                ? message.RemoveReactionAsync(reactionEmote, arg3.UserId)
                 : Task.CompletedTask;
             #endregion
         }
@@ -215,7 +219,7 @@ namespace Ceres.Services
 
                 bool isStatusSet = !string.IsNullOrEmpty(_client.CurrentUser.Activities.FirstOrDefault()?.Name);
                 if (isStatusSet)
-                    _client.SetActivityAsync(null);
+                    _client.SetGameAsync(null);
                 else
                     _ = _fronterStatusMethods.SetFronterStatusAsync();
 
@@ -622,27 +626,28 @@ namespace Ceres.Services
             }
 
 #if false
-            // lmao, maybe someday
-
-            [Command("evalPython")]
-            [Alias("eval")]
-            [RequireOwner(ErrorMessage = "no")]
-            public Task EvalPythonExpression([Remainder]string expression)
+            [Command("evaluate")]
+            [Alias("eval", "e")]
+            [RequireOwner(ErrorMessage = "nah")]
+            public Task EvaluateText([Remainder] string input)
             {
-                ProcessStartInfo python = new("python3", expression)
+                string serializedInput = input.Trim('`');
+                object globals = new { Client = _client, ctx = Context };
+                object evaluation = null;
+                try
                 {
-                    RedirectStandardOutput = true
-                };
-                using Process process = Process.Start(python);
-                process.BeginOutputReadLine();
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.WaitForExit();
-                return Task.CompletedTask;
-            }
+                    evaluation = WaitFor(CSharpScript.EvaluateAsync(serializedInput, ScriptOptions.Default.WithReferences(typeof(Console).Assembly), Context));
+                }
+                catch (Exception)
+                {
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    throw;
+                }
 
-            private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
-            {
-                throw new NotImplementedException();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                return ReplyAsync("👍");
             }
 #endif
 
@@ -683,15 +688,16 @@ namespace Ceres.Services
                 await Context.Message.RemoveReactionAsync(_waitEmote, 1055501764780113951); // Ceres beta
                 await base.AfterExecuteAsync(command);
             }
+
+            internal static A WaitFor<A>(Task<A> task)
+            => Task.Run(async () => { return await task; }).Result;
             #endregion
 
             #region Static
             static internal void AddEmote(SocketGuild guild, out GuildEmote emote, string emoteName, string emoteUrl = null, Attachment attachment = null)
             {
                 emote = null;
-                string definitveEmoteUrl = emoteUrl == null
-                    ? attachment.Url
-                    : emoteUrl;
+                string definitveEmoteUrl = emoteUrl ?? attachment.Url;
                 Uri emoteUri = new(definitveEmoteUrl); // Throws exception if URL is not valid. Gets handled in CommandHandler.OnSlashCommandAsync(SocketSlashCommand)
 
                 using HttpClient httpClient = new();
