@@ -13,7 +13,6 @@ using Newtonsoft.Json;
 using System.Text;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
-using System.Diagnostics;
 
 namespace CeresDSP
 {
@@ -89,8 +88,6 @@ namespace CeresDSP
             DiscordGuild indicatorEmoteServer = await sender.GetGuildAsync(1034142544642183178);
             KeyValuePair<ulong, DiscordEmoji>[] indicatorEmotesArray = indicatorEmoteServer.Emojis.ToArray();
 
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
             foreach (var indicatorEmote in indicatorEmotesArray)
             {
                 if (reactionEmote.Id.Equals(indicatorEmote.Value.Id))
