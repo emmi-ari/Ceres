@@ -7,6 +7,8 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using System.Diagnostics;
+
 namespace Ceres
 {
     internal class Bot
@@ -29,6 +31,8 @@ namespace Ceres
         /// </summary>
         private async Task MainAsync()
         {
+            Debug.WriteLine("THIS BOT IS OBSOLETE. PLEASE USE CeresDSP INSTEAD");
+
             ServiceCollection services = new();
             ConfigureServices(services);
             var provider = services.BuildServiceProvider();

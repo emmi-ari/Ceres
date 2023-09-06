@@ -63,6 +63,7 @@ namespace Ceres.Services
             }
         }
 
+        [Obsolete("This codebase for Ceres is obsolete. Please use CeresDSP instead.", false)]
         public async Task StartAsync()
         {
             string discordToken = _config["ceres.discord_token"];
@@ -73,6 +74,14 @@ namespace Ceres.Services
             await _client.StartAsync();
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider); // Load commands and modules into the command service
+
+            ConsoleColor fg = Console.ForegroundColor;
+            ConsoleColor bg = Console.BackgroundColor;
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.Red;
+            await Console.Out.WriteLineAsync("THIS BOT IS OBSOLETE. PLEASE USE CeresDSP INSTEAD");
+            Console.ForegroundColor = fg;
+            Console.BackgroundColor = bg;
         }
     }
 }
