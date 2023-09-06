@@ -17,8 +17,11 @@ namespace CeresDSP.CommandModules
             Globals globals = new() { ctx = ctx };
             ScriptOptions scriptOptions = ScriptOptions.Default;
             scriptOptions = scriptOptions.AddImports("System");
+            scriptOptions = scriptOptions.AddImports("System.Collections.Generic");
             scriptOptions = scriptOptions.AddImports("System.Diagnostics");
-
+            scriptOptions = scriptOptions.AddImports("System.IO");
+            scriptOptions = scriptOptions.AddImports("System.Threading");
+            scriptOptions = scriptOptions.AddImports("System.Threading.Tasks");
             try
             {
                 object evaluation = await CSharpScript.EvaluateAsync(input.Trim('`', '\'', '"'), scriptOptions, globals);
@@ -39,7 +42,7 @@ namespace CeresDSP.CommandModules
                 GC.Collect();
                 throw;
             }
-            
+
             await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":white_check_mark:"));
             GC.WaitForPendingFinalizers();
             GC.Collect();
