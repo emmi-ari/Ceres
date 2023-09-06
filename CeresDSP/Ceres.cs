@@ -73,6 +73,7 @@ namespace CeresDSP
             Commands = Client.UseCommandsNext(cmdConfig);
             Commands.RegisterCommands<FrontingCommands>();
             Commands.RegisterCommands<WeatherCommands>();
+            Commands.RegisterCommands<OwnerCommands>();
             Commands.RegisterCommands<MiscellaneousCommands>();
             #endregion
 
