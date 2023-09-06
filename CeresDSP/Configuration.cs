@@ -5,13 +5,13 @@ namespace CeresDSP
     public class Configuration
     {
         [JsonProperty("ceres")]
-        public CeresData Ceres { get; set; }
+        public CeresData Ceres { get; init; }
 
         [JsonProperty("apparyllis")]
-        public ApparyllisData Apparyllis { get; set; }
+        public ApparyllisData Apparyllis { get; init; }
 
         [JsonProperty("weatherstack")]
-        public WeatherstackData Weatherstack { get; set; }
+        public WeatherstackData Weatherstack { get; init; }
 
         public class CeresData
         {

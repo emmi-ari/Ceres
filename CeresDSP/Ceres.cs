@@ -86,7 +86,7 @@ namespace CeresDSP
             DiscordEmoji reactionEmote = args.Emoji;
             DiscordMessage reactedMsg = args.Message;
             DiscordGuild indicatorEmoteServer = await sender.GetGuildAsync(1034142544642183178);
-            KeyValuePair<ulong, DiscordEmoji>[] indicatorEmotesArray = indicatorEmoteServer.Emojis.ToArray();
+            IReadOnlyDictionary<ulong, DiscordEmoji> indicatorEmotesArray = indicatorEmoteServer.Emojis;
 
             foreach (var indicatorEmote in indicatorEmotesArray)
             {

@@ -1,13 +1,8 @@
-﻿using CeresDSP.Models.Apparyllis;
-
-using DSharpPlus.CommandsNext;
+﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 
-using Newtonsoft.Json;
-
 using System.Diagnostics;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CeresDSP.CommandModules
@@ -150,17 +145,6 @@ namespace CeresDSP.CommandModules
                 .ToArray();
             int rand = _unsafeRng.Next(0, folderFiles.Length);
             string filePath = folderFiles[rand].FullName;
-            string text = filePath switch
-            {
-                "redditsave.com_german_spongebob_is_kinda_weird-vrm48d21ch081.mp4"
-                    => "CW Laut",
-                "brr_uzi.mp4"
-                    => "CW Laut",
-                "Discord_become_hurensohn2.png"
-                    => "Credits: Aurora",
-                _ // default
-                    => string.Empty
-            };
             using FileStream fs = new(path: filePath, mode: FileMode.Open);
             DiscordMessageBuilder msg = new DiscordMessageBuilder().AddFile(fs);
             await msg.SendAsync(ctx.Channel);

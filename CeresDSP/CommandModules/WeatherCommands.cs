@@ -57,18 +57,16 @@ namespace CeresDSP.CommandModules
             return parsedWindDirection.ToString().TrimEnd('-');
         }
 
-        private static string ParseUvIndex(int uvIndex)
-        {
-            return uvIndex switch
+        private static string ParseUvIndex(int uvIndex) =>
+            uvIndex switch
             {
-                1 or 2 => $"{uvIndex} (Niedrig)",
-                3 or 4 or 5 => $"{uvIndex} (Mittel)",
-                6 or 7 => $"{uvIndex} (Hoch)",
+                1 or 2       => $"{uvIndex} (Niedrig)",
+                3 or 4 or 5  => $"{uvIndex} (Mittel)",
+                6 or 7       => $"{uvIndex} (Hoch)",
                 8 or 9 or 10 => $"{uvIndex} (Sehr hoch)",
-                >= 11 => $"{uvIndex} (Extrem)",
-                _ => $"{uvIndex}",
+                >= 11        => $"{uvIndex} (Extrem)",
+                _            => $"{uvIndex}",
             };
-        }
 
         private async Task<string> GetDefaultPlaceForUserId(ulong uid)
         {
@@ -181,7 +179,7 @@ namespace CeresDSP.CommandModules
                 string[] configLines = await File.ReadAllLinesAsync(_userWeatherConfigPath);
                 foreach (string line in configLines)
                 {
-                    if (string.IsNullOrEmpty(line))
+                    if (string.IsNullOrEmpty(line.Trim()))
                         continue;
                     Dictionary<ulong, string> entry = new();
                     dynamic[] lineData = line.Split(',');
