@@ -3,11 +3,14 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 
 using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
-using static Microsoft.CodeAnalysis.Scripting.ScriptOptions;
+using Microsoft.CodeAnalysis.Scripting;
+using System.Reflection;
 
 namespace CeresDSP.CommandModules
 {
@@ -16,15 +19,15 @@ namespace CeresDSP.CommandModules
         [Command("eval"), RequireOwner]
         public async Task Eval(CommandContext ctx, [RemainingText] string input)
         {
-            Globals globals = new()
-            {
-                ctx = ctx
-            };
+            Globals globals = new() { ctx = ctx };
+            ScriptOptions scriptOptions = ScriptOptions.Default;
+            scriptOptions = scriptOptions.AddImports("System");
+            scriptOptions = scriptOptions.AddImports("System.Diagnostics");
 
             try
             {
-                object evaluation = await CSharpScript.EvaluateAsync(input.Trim('`', '\'', '"'), Default.WithImports("System", "System.Diagnostics"), globals);
-
+                object evaluation = await CSharpScript.EvaluateAsync(input.Trim('`', '\'', '"'), scriptOptions, globals);
+                
                 if (evaluation is not null && evaluation.GetType().IsArray)
                 {
                     string messageFromArray = string.Empty;
