@@ -5,13 +5,6 @@ using DSharpPlus.Entities;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 
-using System;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-
-using Microsoft.CodeAnalysis.Scripting;
-using System.Reflection;
-
 namespace CeresDSP.CommandModules
 {
     public class OwnerCommands : BaseCommandModule
