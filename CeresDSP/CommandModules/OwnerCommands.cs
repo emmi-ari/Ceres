@@ -5,6 +5,8 @@ using DSharpPlus.Entities;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 
+using System.Diagnostics;
+
 namespace CeresDSP.CommandModules
 {
     public class OwnerCommands : BaseCommandModule
@@ -41,6 +43,35 @@ namespace CeresDSP.CommandModules
             await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":white_check_mark:"));
             GC.WaitForPendingFinalizers();
             GC.Collect();
+        }
+
+        [Command("Info")]
+        public async Task Info(CommandContext ctx)
+        {
+            Process process = Process.GetCurrentProcess();
+            string authorIcon = (await ctx.Client.GetUserAsync(233018119856062466)).AvatarUrl;
+            string commandLine = string.Empty;
+            var cmdArgs = Environment.GetCommandLineArgs().ToList();
+            cmdArgs.ForEach(arg => commandLine += $"{arg} ");
+            DiscordEmbed embed = new DiscordEmbedBuilder()
+            {
+                ImageUrl = ctx.Client.CurrentUser.AvatarUrl,
+                Color = new DiscordColor(45, 122, 185),
+                Author = new() { Name = "Bot by emmi.ari", IconUrl = authorIcon },
+                Title = "Info about Ceres",
+                Description = "My [source code](https://github.com/Nihilopia/Ceres)",
+            }
+                .AddField("Base directory", AppContext.BaseDirectory, false)
+                .AddField("Process Up time", $"{DateTime.Now - process.StartTime}", false)
+                .AddField("Debugger attached", $"{Debugger.IsAttached}", false)
+                .AddField("Command Line", commandLine.Trim(), false)
+                .AddField("Current threads", $"{process.Threads.Count}", false)
+                .AddField("Memory usage", $"{process.WorkingSet64 / 1024000} MiB", false)
+                .AddField("Guilds", $"{ctx.Client.Guilds.Count}", false)
+                .AddField("dotnet version", $"{Environment.Version}", false)
+                .AddField("DSharpPlus version", ctx.Client.VersionString, false)
+                .Build();
+            await ctx.RespondAsync(embed);
         }
 
         public class Globals
