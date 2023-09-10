@@ -62,10 +62,10 @@ namespace CeresDSP.CommandModules
             {
                 1 or 2       => $"{uvIndex} (Niedrig)",
                 3 or 4 or 5  => $"{uvIndex} (Mittel)",
-                6 or 7       => $"{uvIndex} (Hoch)",
-                8 or 9 or 10 => $"{uvIndex} (Sehr hoch)",
-                >= 11        => $"{uvIndex} (Extrem)",
-                _            => $"{uvIndex}",
+                6 or 7       => $"```ANSI\n\u001b[0;31m{uvIndex} (Hoch)\u001b[0;00m```",
+                8 or 9 or 10 => $"```ANSI\n\u001b[0;35m{uvIndex} (Sehr hoch)\u001b[0;00m```",
+                >= 11        => $"```ANSI\n\u001b[4;35m{uvIndex} (Extrem)\u001b[0;00m```",
+                _            => $"{uvIndex}"
             };
 
         private async Task<string> GetDefaultPlaceForUserId(ulong uid)
