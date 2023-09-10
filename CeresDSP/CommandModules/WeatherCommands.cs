@@ -121,10 +121,7 @@ namespace CeresDSP.CommandModules
             {
                 Title = $"Wetter für {location}, {serializedResponse.Location.Region}, {serializedResponse.Location.Country}",
                 Color = new DiscordColor(45, 122, 185),
-                Description = $"__**{serializedResponse.Current.WeatherDescriptions[0]} {serializedResponse.Current.Temperature} °C**__\n\n" +
-                $"**Luftdruck:** {serializedResponse.Current.Pressure} mBar\n" +
-                $"**Wind:** {serializedResponse.Current.WindSpeed} km/h {ParseWindDirection(serializedResponse.Current.WindDir)} ({serializedResponse.Current.WindDegree} °)\n" +
-                $"**Relative Luftfeuchte:** {serializedResponse.Current.Humidity} %",
+                Description = $"# {serializedResponse.Current.WeatherDescriptions[0]} {serializedResponse.Current.Temperature} °C",
                 Footer = new()
                 {
                     Text = "Data provided by WeatherStack API",
@@ -132,11 +129,14 @@ namespace CeresDSP.CommandModules
                 }
             };
 
-            embed.AddField("Bedeckung", $"{serializedResponse.Current.Cloudcover} %");
+            embed.AddField("Luftdruck", $"{serializedResponse.Current.Pressure} mBar");
+            embed.AddField("Wind", $"{serializedResponse.Current.WindSpeed} km/h {ParseWindDirection(serializedResponse.Current.WindDir)} ({serializedResponse.Current.WindDegree} °)");
+            embed.AddField("Relative Luftfeuchte", $"{serializedResponse.Current.Humidity} %");
             embed.AddField("Feels like", $"{serializedResponse.Current.Feelslike} °C");
-            embed.AddField("Uhrzeit", $"{serializedResponse.Current.ObservationTime}");
+            embed.AddField("Bedeckung", $"{serializedResponse.Current.Cloudcover} %");
             embed.AddField("Niederschlagswahrscheinlichkeit", $"{serializedResponse.Current.Precip} %");
             embed.AddField("UV Index", $"{ParseUvIndex(serializedResponse.Current.UvIndex)}");
+            embed.AddField("Uhrzeit", $"{DateTime.Parse(serializedResponse.Current.ObservationTime).ToLocalTime():t}");
             embed.WithThumbnail(serializedResponse.Current.WeatherIcons[0]);
 
             await ctx.RespondAsync(embed: embed.Build());
