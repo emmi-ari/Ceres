@@ -1,9 +1,13 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using DSharpPlus.SlashCommands;
+
+using Microsoft.CodeAnalysis;
 
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 
 namespace CeresDSP.CommandModules
 {
@@ -27,6 +31,10 @@ namespace CeresDSP.CommandModules
         [Command("AddReaction")]
         [Aliases("reaction", "react")]
         public async Task AddReaction(CommandContext ctx, string emote, string locationLink)
+            => await AddReactionDynamic(ctx, emote, locationLink);
+        internal async Task AddReaction(InteractionContext ctx, string emote, string locationLink)
+            => await AddReactionDynamic(ctx, emote, locationLink);
+        private async Task AddReactionDynamic(dynamic ctx, string emote, string locationLink)
         {
             ulong guildId;
             ulong channelId;
@@ -45,7 +53,7 @@ namespace CeresDSP.CommandModules
             }
             else
             {
-                await ctx.RespondAsync("Make sure it's a discord link with three (slash seperated) IDs");
+                await Helper.RespondToCommand(ctx, "Make sure it's a discord link with three (slash seperated) IDs");
                 return;
             }
 
@@ -59,7 +67,7 @@ namespace CeresDSP.CommandModules
             {
                 if (ex.Message == "Not found: 404")
                 {
-                    await ctx.RespondAsync("Link is either wrong or I don't have access to it.");
+                    await Helper.RespondToCommand(ctx, "Link is either wrong or I don't have access to it.");
                     return;
                 }
             }
@@ -73,12 +81,19 @@ namespace CeresDSP.CommandModules
             catch (ArgumentException ex)
             {
                 if (ex.Message == "Invalid emoji name specified. (Parameter 'name')")
-                    await ctx.RespondAsync("I don't have access to that emote.");
+                    await Helper.RespondToCommand(ctx, "I don't have access to that emote.");
             }
+
+            if (ctx is InteractionContext iCtx)
+                await iCtx.CreateResponseAsync($"Reaction added to {locationLink}");
         }
 
         [Command("Say")]
         public async Task Say(CommandContext ctx, string msg, string locationLink = "", ulong guildId = 0ul, ulong channelId = 0ul, ulong messageId = 0ul)
+            => await SayDynamic(ctx, msg, locationLink, guildId, channelId, messageId);
+        internal async Task Say(InteractionContext ctx, string msg, string locationLink, ulong guildId = 0ul, ulong channelId = 0ul, ulong messageId = 0ul)
+            => await SayDynamic(ctx, msg, locationLink, guildId, channelId, messageId);
+        private async Task SayDynamic(dynamic ctx, string msg, string locationLink, ulong guildId, ulong channelId, ulong messageId)
         {
             #region Location link parsing
             Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
@@ -91,7 +106,7 @@ namespace CeresDSP.CommandModules
             }
             else
             {
-                await ctx.RespondAsync("Make sure it's a discord link with at least two (slash seperated) IDs");
+                await Helper.RespondToCommand(ctx, "Make sure it's a discord link with at least two (slash seperated) IDs");
                 return;
             }
             #endregion
@@ -102,7 +117,7 @@ namespace CeresDSP.CommandModules
             DiscordGuild guild = await ctx.Client.GetGuildAsync(guildId);
             if (guild == null)
             {
-                await ctx.RespondAsync("Invalid Guild ID");
+                await Helper.RespondToCommand(ctx, "Invalid Guild ID");
                 return;
             }
             #endregion
@@ -112,7 +127,7 @@ namespace CeresDSP.CommandModules
                 channelId = ctx.Channel.Id;
             if (guild.GetChannel(channelId) is not DiscordChannel messageChannel) // Null check
             {
-                await ctx.RespondAsync("Invalid Channel ID");
+                await Helper.RespondToCommand(ctx, "Invalid Channel ID");
                 return;
             }
             #endregion
@@ -123,21 +138,31 @@ namespace CeresDSP.CommandModules
                 DiscordMessage replyMessage = await messageChannel.GetMessageAsync(messageId);
                 if (replyMessage == null)
                 {
-                    await ctx.RespondAsync("Invalid Message ID");
+                    await Helper.RespondToCommand(ctx, "Invalid Message ID");
                     return;
                 }
                 DiscordMessageBuilder messageBuilder = new DiscordMessageBuilder().WithContent(msg).WithReply(messageId);
                 await messageBuilder.SendAsync(messageChannel);
+
+                if (ctx is InteractionContext iCtx1)
+                    await iCtx1.CreateResponseAsync("Message sent");
                 return;
             }
             #endregion
 
             await messageChannel.SendMessageAsync(msg);
+
+            if (ctx is InteractionContext iCtx)
+                await iCtx.CreateResponseAsync("Message sent");
         }
 
         [Command("folder")]
         [Aliases("f")]
         public async Task Folder(CommandContext ctx)
+            => await FolderDynamic(ctx);
+        internal async Task Folder(InteractionContext ctx)
+            => await FolderDynamic(ctx);
+        private async Task FolderDynamic(dynamic ctx)
         {
             DirectoryInfo directory = new(_config.Ceres.FolderCommandPath);
             FileInfo[] folderFiles = directory.GetFiles()
@@ -148,11 +173,19 @@ namespace CeresDSP.CommandModules
             using FileStream fs = new(path: filePath, mode: FileMode.Open);
             DiscordMessageBuilder msg = new DiscordMessageBuilder().AddFile(fs);
             await msg.SendAsync(ctx.Channel);
+
+            if (ctx is InteractionContext iCtx)
+                await iCtx.CreateResponseAsync("\\👍");
         }
 
         [Command("EmoteToGif")]
         [Aliases("Emote", "Gif", "FuckNitro")]
         public async Task EmoteToGif(CommandContext ctx)
+            => await EmoteToGifDynamic(ctx);
+        [Obsolete("Slash command needs a link", false)]
+        internal async Task EmoteToGif(InteractionContext ctx, string locationLink)
+            => await EmoteToGifDynamic(ctx, locationLink);
+        private async Task EmoteToGifDynamic(dynamic ctx, string locationLink = "")
         {
             #region Local function(s)
             static async Task ConvertEmoteToGif(string emoteUrl, string emoteName, bool emoteIsAnimated)
@@ -188,9 +221,34 @@ namespace CeresDSP.CommandModules
             }
             #endregion
 
-            DiscordMessage msg = ctx.Message.Reference is not null
-                ? await ctx.Channel.GetMessageAsync(ctx.Message.Reference.Message.Id)
-                : ctx.Message;
+            ulong guildId;
+            ulong channelId;
+            ulong messageId = 0;
+            Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
+            if (match.Groups.Count >= 2)
+            {
+                string[] ids = match.Groups[0].Value.Replace('/', ',').TrimStart(',').Split(',');
+                guildId = Convert.ToUInt64(ids[0]);
+                channelId = Convert.ToUInt64(ids[1]);
+                if (ids.Length == 3) messageId = Convert.ToUInt64(ids[2]);
+            }
+            else
+            {
+                await Helper.RespondToCommand(ctx, "Make sure it's a discord link with at least two (slash seperated) IDs");
+                return;
+            }
+
+            DiscordMessage msg = null;
+            if (ctx is CommandContext cCtx)
+                msg = cCtx.Message.Reference is not null
+                ? await cCtx.Channel.GetMessageAsync(ctx.Message.Reference.Message.Id)
+                : cCtx.Message;
+            else if (ctx is InteractionContext iCtx1)
+            {
+                DiscordGuild guild = await iCtx1.Client.GetGuildAsync(guildId);
+                msg = await guild.GetChannel(channelId).GetMessageAsync(messageId);
+            }
+
             Match emoteSnowflake = Regex.Match(msg.Content, @"<(a|):(\w+):(\d+)>");
             bool isAnimated = emoteSnowflake.Groups[1].Value == "a";
             string emoteName = emoteSnowflake.Groups[2].Value;
@@ -201,6 +259,39 @@ namespace CeresDSP.CommandModules
             FileStream fileStream = new($"{emoteName}.gif", FileMode.Open);
             await messageBuilder.AddFile(fileStream).SendAsync(ctx.Channel);
 
+            if (ctx is InteractionContext iCtx)
+                await iCtx.CreateResponseAsync("\\👍");
         }
+    }
+
+    public class MiscellaneousCommandsSlash : ApplicationCommandModule
+    {
+        MiscellaneousCommands MiscellaneousCommads { get; init; }
+
+        public MiscellaneousCommandsSlash(Configuration config)
+        {
+            MiscellaneousCommads = new(config);
+        }
+
+        [SlashCommand("AddReaction", "Adds an emote reaction to a message")]
+        public async Task AddReaction(InteractionContext ctx,
+            [Option("Emote", "Emote to react with")] string emote,
+            [Option("MessageLink", "Link of message to react to")] string locationLink)
+            => await MiscellaneousCommads.AddReaction(ctx, emote, locationLink);
+
+        [SlashCommand("Say", "Sends a message as Ceres")]
+        public async Task Say(InteractionContext ctx,
+            [Option("Message", "Message to send")] string msg,
+            [Option("ReferenceMessageLink", "Link to a channel or to a message, if Ceres should reply to a certain message")] string locationLink)
+            => await MiscellaneousCommads.Say(ctx, msg, locationLink);
+
+        [SlashCommand("Folder", "Sends a random file (mostly memes)")]
+        public async Task Folder(InteractionContext ctx)
+            => await MiscellaneousCommads.Folder(ctx);
+
+        [SlashCommand("EmoteToGif", "Converts any emote to a gif, that you can save.")]
+        public async Task EmoteToGif(InteractionContext ctx,
+            [Option("MessageLink", "Link of the message with the emotes you want to convert")] string locationLink)
+            => await MiscellaneousCommads.EmoteToGif(ctx, locationLink);
     }
 }

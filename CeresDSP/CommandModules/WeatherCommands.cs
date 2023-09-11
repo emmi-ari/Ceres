@@ -3,6 +3,7 @@
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using DSharpPlus.SlashCommands;
 
 using Newtonsoft.Json;
 
@@ -98,12 +99,16 @@ namespace CeresDSP.CommandModules
         [Command("weather")]
         [Aliases("wetter", "w")]
         public async Task Weather(CommandContext ctx, [RemainingText] string place = "")
+            => await WeatherDynamic(ctx, place);
+        internal async Task Weather(InteractionContext ctx, [RemainingText] string place = "")
+            => await WeatherDynamic(ctx, place);
+        private async Task WeatherDynamic(dynamic ctx, [RemainingText] string place = "")
         {
             string defaultPlaceForUser = await GetDefaultPlaceForUserId(ctx.User.Id);
 
             if (string.IsNullOrEmpty(place) && string.IsNullOrEmpty(defaultPlaceForUser))
             {
-                await ctx.RespondAsync($"You have to provide a place name if you haven't set a default place with {_config.Ceres.Prefix}defaultWeather yet. That will be saved in an unencrypted CSV file, where the Discord User ID and the provided location will be saved.");
+                await Helper.RespondToCommand(ctx, $"You have to provide a place name if you haven't set a default place with {_config.Ceres.Prefix}defaultWeather yet. That will be saved in an unencrypted CSV file, where the Discord User ID and the provided location will be saved.");
                 return;
             }
 
@@ -139,12 +144,16 @@ namespace CeresDSP.CommandModules
             embed.AddField("Uhrzeit", $"{DateTime.Parse(serializedResponse.Current.ObservationTime).ToLocalTime():t}");
             embed.WithThumbnail(serializedResponse.Current.WeatherIcons[0]);
 
-            await ctx.RespondAsync(embed: embed.Build());
+            await Helper.RespondToCommand(ctx, embed.Build());
         }
 
         [Command("defaultWeather")]
         [Aliases("dw")]
         public async Task UserSetDefaultWeatherLocation(CommandContext ctx, [RemainingText] string place = "")
+            => await UserSetDefaultWeatherLocationDynamic(ctx, place);
+        internal async Task UserSetDefaultWeatherLocation(InteractionContext ctx, [RemainingText] string place = "")
+            => await UserSetDefaultWeatherLocationDynamic(ctx, place);
+        private async Task UserSetDefaultWeatherLocationDynamic(dynamic ctx, [RemainingText] string place = "")
         {
             if (string.IsNullOrEmpty(place))
                 throw new ArgumentException($"'{nameof(place)}' cannot be null or empty.", nameof(place));
@@ -154,7 +163,7 @@ namespace CeresDSP.CommandModules
 
             if (serializedResponse.Current is null && serializedResponse.Location is null)
             {
-                await ctx.RespondAsync($"{place} was not found by the WeatherStack API.");
+                await Helper.RespondToCommand(ctx, $"{place} was not found by the WeatherStack API.");
                 return;
             }
 
@@ -163,11 +172,11 @@ namespace CeresDSP.CommandModules
             try
             {
                 ChangeDefaultWeatherConfigForUser(ctx.User.Id, place, modifyExistentDefaultValue);
-                await ctx.RespondAsync($"Changed your default location to {place}.");
+                await Helper.RespondToCommand(ctx, $"Changed your default location to {place}.");
             }
             catch (Exception ex)
             {
-                await ctx.RespondAsync($"Something went horribly wrong. Maybe this text will help: {ex.Message} (0x{ex.HResult:X8})");
+                await Helper.RespondToCommand(ctx, $"Something went horribly wrong. Maybe this text will help: {ex.Message} (0x{ex.HResult:X8})");
             }
         }
 
@@ -192,5 +201,26 @@ namespace CeresDSP.CommandModules
 
             return userWeatherConfig;
         }
+    }
+
+    [SlashCommandGroup("Weather", "Weather commands")]
+    public class WeatherCommandsSlash : ApplicationCommandModule
+    {
+        WeatherCommands WeatherCommands { get; init; }
+
+        public WeatherCommandsSlash(Configuration config)
+        {
+            WeatherCommands = new(config);
+        }
+
+        [SlashCommand("Show", "Returns weather of either your default place or a provided place")]
+        public async Task Weather(InteractionContext ctx,
+            [Option("Place", "The place for where you want to look the weather up")] string place = "")
+            => await WeatherCommands.Weather(ctx, place);
+
+        [SlashCommand("DefaultLocation", "Sets the default location for you, so that you can use the weather command without a place")]
+        public async Task UserSetDefaultWeatherLocation(InteractionContext ctx,
+            [Option("Place", "Default place")] string place)
+            => await WeatherCommands.UserSetDefaultWeatherLocation(ctx, place);
     }
 }

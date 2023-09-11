@@ -1,18 +1,20 @@
-﻿using CeresDSP.Services;
-using CeresDSP.CommandModules;
+﻿using CeresDSP.CommandModules;
+using CeresDSP.Services;
 
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
+using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
+using DSharpPlus.SlashCommands;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
 using System.Text;
-using DSharpPlus.Entities;
-using DSharpPlus.EventArgs;
 
 namespace CeresDSP
 {
@@ -43,7 +45,10 @@ namespace CeresDSP
                 Token = Configuration.Ceres.Token,
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
-                Intents = (DiscordIntents)0x1FFFF
+                Intents = (DiscordIntents)0x1FFFF,
+#if DEBUG
+                MinimumLogLevel = LogLevel.Debug
+#endif
             });
 
             Client.UseInteractivity(new InteractivityConfiguration()
@@ -75,6 +80,14 @@ namespace CeresDSP
             Commands.RegisterCommands<WeatherCommands>();
             Commands.RegisterCommands<OwnerCommands>();
             Commands.RegisterCommands<MiscellaneousCommands>();
+
+            SlashCommandsExtension slashCommands = Client.UseSlashCommands(new()
+            {
+                Services = srvProvider
+            });
+            slashCommands.RegisterCommands<FrontingCommandsSlash>();
+            slashCommands.RegisterCommands<WeatherCommandsSlash>();
+            slashCommands.RegisterCommands<MiscellaneousCommandsSlash>();
             #endregion
 
             Client.MessageReactionAdded += OnReactionAdded;
