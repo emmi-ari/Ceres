@@ -58,7 +58,9 @@ namespace CeresDSP
                 AutoReconnect = true,
                 Intents = (DiscordIntents)0x1FFFF,
 #if DEBUG
-                MinimumLogLevel = LogLevel.Debug
+                MinimumLogLevel = LogLevel.Debug,
+#else
+                MinimumLogLevel = LogLevel.Information
 #endif
             });
 
@@ -66,7 +68,7 @@ namespace CeresDSP
             {
                 Timeout = TimeSpan.FromMinutes(1)
             });
-            #endregion
+#endregion
 
             #region Configure Commands
             StatusService = new(Client, Configuration);
