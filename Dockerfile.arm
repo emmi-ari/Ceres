@@ -9,7 +9,7 @@ WORKDIR /root/Ceres
 # Restore as distinct layers
 RUN dotnet restore
 # Build and publish a release
-RUN dotnet publish -c Release -o ~/Ceres/Release
+RUN dotnet publish --arch arm64 -c Release -o ~/Ceres/Release
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
