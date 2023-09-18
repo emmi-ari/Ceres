@@ -57,7 +57,7 @@ namespace CeresDSP
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
                 Intents = (DiscordIntents)0x1FFFF,
-                MinimumLogLevel = LogLevel.Information
+                MinimumLogLevel = GetLogLevel()
             });
 
             Client.UseInteractivity(new InteractivityConfiguration()
@@ -122,6 +122,19 @@ namespace CeresDSP
         {
             await Client.ConnectAsync();
             await StatusService.TriggerStatusRefreshAsync();
+        }
+
+        private LogLevel GetLogLevel()
+        {
+            return Configuration.Ceres.LogLevel.ToUpper() switch
+            {
+                "CRITICAL" => LogLevel.Critical,
+                "ERROR" => LogLevel.Error,
+                "WARNING" => LogLevel.Warning,
+                "DEBUG" => LogLevel.Debug,
+                "TRACE" => LogLevel.Trace,
+                "INFORMATION" or "INFO" or _ => LogLevel.Information
+            };
         }
     }
 }

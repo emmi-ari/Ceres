@@ -23,6 +23,9 @@ namespace CeresDSP
 
             [JsonProperty("foldercommandpath")]
             public string FolderCommandPath { get; init; }
+
+            [JsonProperty("loglevel")]
+            public string LogLevel { get; init; }
         }
 
         public class ApparyllisData
