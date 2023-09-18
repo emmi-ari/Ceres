@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
+using System.Diagnostics;
 using System.Text;
 
 namespace CeresDSP
@@ -34,9 +35,19 @@ namespace CeresDSP
         public Ceres()
         {
             #region Get Configuration
-            using FileStream configFS = File.OpenRead("config.json");
-            using StreamReader configReader = new(configFS, new UTF8Encoding(true));
-            Configuration = JsonConvert.DeserializeObject<Configuration>(configReader.ReadToEnd());
+            try
+            {
+                using FileStream configFS = File.OpenRead("config.json");
+                using StreamReader configReader = new(configFS, new UTF8Encoding(true));
+                Configuration = JsonConvert.DeserializeObject<Configuration>(configReader.ReadToEnd());
+            }
+            catch (NullReferenceException)
+            {
+                string errorMsg = $"\"config.json\" was not found. Please put it in the current working directory ({Environment.CurrentDirectory})";
+                Console.WriteLine(errorMsg);
+                Debug.WriteLine(errorMsg);
+                Environment.Exit(-1);
+            }
             #endregion
 
             #region Build Client
