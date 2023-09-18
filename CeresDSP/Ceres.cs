@@ -57,11 +57,7 @@ namespace CeresDSP
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
                 Intents = (DiscordIntents)0x1FFFF,
-#if DEBUG
-                MinimumLogLevel = LogLevel.Debug,
-#else
                 MinimumLogLevel = LogLevel.Information
-#endif
             });
 
             Client.UseInteractivity(new InteractivityConfiguration()
