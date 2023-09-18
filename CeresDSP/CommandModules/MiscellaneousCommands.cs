@@ -89,31 +89,41 @@ namespace CeresDSP.CommandModules
         }
 
         [Command("Say")]
-        public async Task Say(CommandContext ctx, string msg, string locationLink = "", ulong guildId = 0ul, ulong channelId = 0ul, ulong messageId = 0ul)
-            => await SayDynamic(ctx, msg, locationLink, guildId, channelId, messageId);
-        internal async Task Say(InteractionContext ctx, string msg, string locationLink, ulong guildId = 0ul, ulong channelId = 0ul, ulong messageId = 0ul)
-            => await SayDynamic(ctx, msg, locationLink, guildId, channelId, messageId);
-        private async Task SayDynamic(dynamic ctx, string msg, string locationLink, ulong guildId, ulong channelId, ulong messageId)
+        public async Task Say(CommandContext ctx, string msg, string locationLink = "")
+            => await SayDynamic(ctx, msg, locationLink);
+        internal async Task Say(InteractionContext ctx, string msg, string locationLink)
+            => await SayDynamic(ctx, msg, locationLink);
+        private async Task SayDynamic(dynamic ctx, string msg, string locationLink)
         {
             #region Location link parsing
-            Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
-            if (match.Groups.Count >= 2)
+            ulong guildId;
+            ulong channelId;
+            ulong messageId = 0ul;
+
+            if (string.IsNullOrEmpty(locationLink.Trim()))
             {
-                string[] ids = match.Groups[0].Value.Replace('/', ',').TrimStart(',').Split(',');
-                guildId = Convert.ToUInt64(ids[0]);
-                channelId = Convert.ToUInt64(ids[1]);
-                if (ids.Length == 3) messageId = Convert.ToUInt64(ids[2]);
+                guildId = ctx.Guild.Id;
+                channelId = ctx.Channel.Id;
             }
             else
             {
-                await Helper.RespondToCommand(ctx, "Make sure it's a discord link with at least two (slash seperated) IDs");
-                return;
+                Match match = Regex.Match(locationLink, @"(\/\d{17,}){2,3}");
+                if (match.Groups.Count >= 2)
+                {
+                    string[] ids = match.Groups[0].Value.Replace('/', ',').TrimStart(',').Split(',');
+                    guildId = Convert.ToUInt64(ids[0]);
+                    channelId = Convert.ToUInt64(ids[1]);
+                    if (ids.Length == 3) messageId = Convert.ToUInt64(ids[2]);
+                }
+                else
+                {
+                    await Helper.RespondToCommand(ctx, "Make sure it's a discord link with at least two (slash seperated) IDs");
+                    return;
+                }
             }
             #endregion
 
             #region Guild ID parsing
-            if (guildId == 0ul)
-                guildId = ctx.Guild.Id;
             DiscordGuild guild = await ctx.Client.GetGuildAsync(guildId);
             if (guild == null)
             {
@@ -123,8 +133,6 @@ namespace CeresDSP.CommandModules
             #endregion
 
             #region Channel ID parsing
-            if (channelId == 0ul)
-                channelId = ctx.Channel.Id;
             if (guild.GetChannel(channelId) is not DiscordChannel messageChannel) // Null check
             {
                 await Helper.RespondToCommand(ctx, "Invalid Channel ID");
@@ -282,7 +290,7 @@ namespace CeresDSP.CommandModules
         [SlashCommand("Say", "Sends a message as Ceres")]
         public async Task Say(InteractionContext ctx,
             [Option("Message", "Message to send")] string msg,
-            [Option("ReferenceMessageLink", "Link to a channel or to a message, if Ceres should reply to a certain message")] string locationLink)
+            [Option("ReferenceMessageLink", "Link to a channel or to a message, if Ceres should reply to a certain message")] string locationLink = "")
             => await MiscellaneousCommads.Say(ctx, msg, locationLink);
 
         [SlashCommand("Folder", "Sends a random file (mostly memes)")]
