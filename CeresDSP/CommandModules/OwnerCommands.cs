@@ -14,7 +14,7 @@ namespace CeresDSP.CommandModules
         [Command("eval"), RequireOwner]
         public async Task Eval(CommandContext ctx, [RemainingText] string input)
         {
-            Globals globals = new() { ctx = ctx };
+            Globals globals = new(ctx);
             ScriptOptions scriptOptions = ScriptOptions.Default;
             scriptOptions = scriptOptions.AddImports("System");
             scriptOptions = scriptOptions.AddImports("System.Collections.Generic");
@@ -40,7 +40,6 @@ namespace CeresDSP.CommandModules
                 await ctx.RespondAsync($"{ex.Message}\n*(0x{ex.HResult:x8})*");
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                throw;
             }
 
             await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":white_check_mark:"));
@@ -79,7 +78,12 @@ namespace CeresDSP.CommandModules
 
         public class Globals
         {
-            public CommandContext ctx;
+            public readonly CommandContext ctx;
+
+            public Globals(CommandContext context)
+            {
+                ctx = context;
+            }
         }
     }
 }
