@@ -102,6 +102,7 @@ namespace CeresDSP
             slashCommands.RegisterCommands<MiscellaneousCommandsSlash>();
             #endregion
 
+            // TODO create class with all client event handlers instead of having those in this class
             Client.MessageReactionAdded += OnReactionAdded;
             Client.MessageCreated += OnMessageCreated;
         }
