@@ -91,7 +91,6 @@ namespace CeresDSP.Services
             string response = await frontingStatusResponse.Content.ReadAsStringAsync();
             response = "{\"response\":" + response + "}"; // Because why would an API give valid JSON as response, am I right?
             ApparyllisModel serializedResponse = JsonConvert.DeserializeObject<ApparyllisModel>(response);
-            string logMessage = $"Recieved response from apparyllis server: {frontingStatusResponse.StatusCode}";
 
             return serializedResponse;
         }
@@ -107,8 +106,7 @@ namespace CeresDSP.Services
             for (int i = 0; i < fronterCount; i++)
             {
                 ApparyllisContentModel fronter = responseSerialized.Response[i]?.Content;
-                if (fronter is null)
-                    continue;
+                if (fronter is null) continue;
 
                 try
                 {

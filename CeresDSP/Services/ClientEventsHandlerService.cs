@@ -57,7 +57,7 @@ namespace CeresDSP.Services
 
             foreach (var indicatorEmote in indicatorEmotesArray)
             {
-                if (reactionEmote.Id.Equals(indicatorEmote.Value.Id))
+                if (reactionEmote.Id == indicatorEmote.Value.Id)
                     await reactedMsg.DeleteReactionAsync(reactionEmote, args.User);
             }
         }
