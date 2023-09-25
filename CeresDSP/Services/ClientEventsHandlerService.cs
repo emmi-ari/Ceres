@@ -3,7 +3,6 @@ using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace CeresDSP.Services
 {
