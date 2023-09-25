@@ -1,4 +1,5 @@
 ﻿using CeresDSP.CommandModules;
+using CeresDSP.Models;
 using CeresDSP.Services;
 
 using DSharpPlus;

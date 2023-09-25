@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace CeresDSP
+namespace CeresDSP.Models
 {
     public class Configuration
     {
