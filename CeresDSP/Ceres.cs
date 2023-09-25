@@ -19,15 +19,15 @@ namespace CeresDSP
 {
     public class Ceres
     {
-        public DiscordClient Client { get; private set; }
+        public DiscordClient Client { get; init; }
 
-        public InteractivityExtension Interactivity { get; private set; }
+        public InteractivityExtension Interactivity { get; init; }
 
-        public CommandsNextExtension Commands { get; private set; }
+        public CommandsNextExtension Commands { get; init; }
 
         public Configuration Configuration { get; init; }
 
-        public FronterStatusService StatusService { get; private set; }
+        public FronterStatusService StatusService { get; init; }
 
 
         public Ceres()
