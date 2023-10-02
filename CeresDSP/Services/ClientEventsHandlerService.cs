@@ -39,7 +39,7 @@ namespace CeresDSP.Services
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36");
             HttpResponseMessage response = await client.SendAsync(new(HttpMethod.Get, link));
             string responseContent = await response.Content.ReadAsStringAsync();
-            MatchCollection matches = Regex.Matches(responseContent, @"<meta property=""og:url"" content=""(https:\/\/open\.spotify\.com\/\w+\/\w+)""\/>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            MatchCollection matches = Regex.Matches(responseContent, @"<meta property=""og:url"" content=""(https:\/\/open\.spotify\.com\/\w+\/\w+)(\?.*?)*""\/>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
             return matches.Count > 0
                 ? matches[0].Groups[1].Value
