@@ -1,4 +1,5 @@
-﻿using CeresDSP.Models.Apparyllis;
+﻿using CeresDSP.Models;
+using CeresDSP.Models.Apparyllis;
 
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;

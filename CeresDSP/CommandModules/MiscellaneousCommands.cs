@@ -1,4 +1,6 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using CeresDSP.Models;
+
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
@@ -7,7 +9,6 @@ using Microsoft.CodeAnalysis;
 
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading.Channels;
 
 namespace CeresDSP.CommandModules
 {

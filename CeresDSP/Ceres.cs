@@ -63,7 +63,7 @@ namespace CeresDSP
             {
                 Timeout = TimeSpan.FromMinutes(1)
             });
-#endregion
+            #endregion
 
             #region Configure Commands
             StatusService = new(Client, Configuration);
