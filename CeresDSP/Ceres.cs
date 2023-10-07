@@ -96,6 +96,7 @@ namespace CeresDSP
             slashCommands.RegisterCommands<FrontingCommandsSlash>();
             slashCommands.RegisterCommands<WeatherCommandsSlash>();
             slashCommands.RegisterCommands<MiscellaneousCommandsSlash>();
+            slashCommands.RegisterCommands<TonalIndicatorCommands>();
             #endregion
 
             #region Event Handling
