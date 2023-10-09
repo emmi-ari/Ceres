@@ -1,4 +1,5 @@
-﻿using DSharpPlus.CommandsNext.Attributes;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.SlashCommands;
 
 using System.Text;
@@ -6,6 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace CeresDSP.CommandModules
 {
+    [SlashCommandGroup("TonalIndicator", "Explanation commands for common tonal indicators")]
     internal class TonalIndicatorCommands : ApplicationCommandModule
     {
         private Dictionary<string, string> Indicators { get; init; }
@@ -65,7 +67,7 @@ namespace CeresDSP.CommandModules
             };
         }
 
-        [ContextMenu(DSharpPlus.ApplicationCommandType.MessageContextMenu, "Explain tonal indicators")]
+        [ContextMenu(ApplicationCommandType.MessageContextMenu, "Explain tonal indicators")]
         [Description("Sends a message only you can see in the chat with an explanation for each found tonal indicator in that message.")]
         internal async Task ExplainMessage(ContextMenuContext ctx)
         {
@@ -99,6 +101,25 @@ namespace CeresDSP.CommandModules
                 explanations.Append($"\n*Couldn't find explanation(s) for following indicator(s): {string.Join(", ", unknownIndicators)}*");
 
             await ctx.CreateResponseAsync(explanations.ToString(), true);
+        }
+
+        [SlashCommand("Explain", "Get an explanation for what a certain tonal indicator means")]
+        internal async Task ExplainIndicator(InteractionContext ctx,
+            [Option("Indicator", "The indicator you want an explanation for")] string indicator)
+        {
+            string sIndicator = indicator.Replace("/", string.Empty);
+            string explanation;
+
+            try
+            {
+                explanation = $"/{sIndicator} = {Indicators[sIndicator]}";
+            }
+            catch (KeyNotFoundException)
+            {
+                explanation = $"Couldn't find an explanation for the indicator `/{sIndicator}`";
+            }
+
+            await ctx.CreateResponseAsync(explanation);
         }
     }
 }
