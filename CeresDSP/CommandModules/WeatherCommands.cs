@@ -64,9 +64,9 @@ namespace CeresDSP.CommandModules
             {
                 1 or 2       => $"{uvIndex} (Niedrig)",
                 3 or 4 or 5  => $"{uvIndex} (Mittel)",
-                6 or 7       => $"```ANSI\n\u001b[0;31m{uvIndex} (Hoch)\u001b[0;00m```",
-                8 or 9 or 10 => $"```ANSI\n\u001b[0;35m{uvIndex} (Sehr hoch)\u001b[0;00m```",
-                >= 11        => $"```ANSI\n\u001b[4;35m{uvIndex} (Extrem)\u001b[0;00m```",
+                6 or 7       => $"**{uvIndex} (Hoch)**",
+                8 or 9 or 10 => $"**__{uvIndex} (Sehr hoch)__**",
+                >= 11        => $"***__{uvIndex} (Extrem)__***",
                 _            => $"{uvIndex}"
             };
 
@@ -206,7 +206,7 @@ namespace CeresDSP.CommandModules
 
     [SlashCommandGroup("Weather", "Weather commands")]
     public class WeatherCommandsSlash(Configuration config) : ApplicationCommandModule
-        {
+    {
         WeatherCommands WeatherCommands { get; init; } = new(config);
 
         [SlashCommand("Show", "Returns weather of either your default place or a provided place")]
