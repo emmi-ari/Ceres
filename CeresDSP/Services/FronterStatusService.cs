@@ -52,7 +52,8 @@ namespace CeresDSP.Services
 
         private Dictionary<string, string> GetRelationField(string memberIdsDeserialized)
         {
-            string[] memberIdArray = memberIdsDeserialized.Split(' ');
+            string[] memberIdArray = memberIdsDeserialized.Split(';');
+            if (string.IsNullOrWhiteSpace(memberIdArray[0]) && memberIdArray.Length == 1) return [];
             Dictionary<string, string> memberIdNames = new(memberIdArray.Length);
             foreach (string memberId in memberIdArray)
             {
