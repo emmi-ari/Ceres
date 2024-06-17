@@ -7,14 +7,9 @@ using DSharpPlus.SlashCommands;
 
 namespace CeresDSP.CommandModules
 {
-    public class FrontingCommands : BaseCommandModule
+    public class FrontingCommands(FronterStatusService fronterStatusService) : BaseCommandModule
     {
-        private FronterStatusService FronterStatusService { get; set; }
-
-        public FrontingCommands(FronterStatusService fronterStatusService)
-        {
-            FronterStatusService = fronterStatusService;
-        }
+        private FronterStatusService FronterStatusService { get; set; } = fronterStatusService;
 
         [Command("updatefront")]
         [Aliases("u", "uf")]
@@ -51,14 +46,9 @@ namespace CeresDSP.CommandModules
     }
 
     [SlashCommandGroup("FrontingStatus", "Commands for Ceres' status")]
-    public class FrontingCommandsSlash : ApplicationCommandModule
+    public class FrontingCommandsSlash(FronterStatusService fronterStatusService) : ApplicationCommandModule
     {
-        FrontingCommands FrontingCommads { get; init; }
-
-        public FrontingCommandsSlash(FronterStatusService fronterStatusService)
-        {
-            FrontingCommads = new(fronterStatusService);
-        }
+        FrontingCommands FrontingCommads { get; init; } = new(fronterStatusService);
 
         [SlashCommand("Update", "Updates Ceres status with refreshed information about who's fronting")]
         public async Task Update(InteractionContext ctx)

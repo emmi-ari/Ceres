@@ -10,11 +10,7 @@ namespace CeresDSP.CommandModules
     [SlashCommandGroup("TonalIndicator", "Explanation commands for common tonal indicators")]
     internal class TonalIndicatorCommands : ApplicationCommandModule
     {
-        private Dictionary<string, string> Indicators { get; init; }
-
-        public TonalIndicatorCommands()
-        {
-            Indicators = new()
+        private Dictionary<string, string> Indicators { get; init; } = new()
             {
                 { "a", "alterous" },
                 { "ay", "at you" },
@@ -65,7 +61,6 @@ namespace CeresDSP.CommandModules
                 { "t", "teasing" },
                 { "th", "threat" }
             };
-        }
 
         [ContextMenu(ApplicationCommandType.MessageContextMenu, "Explain tonal indicators")]
         [Description("Sends a message only you can see in the chat with an explanation for each found tonal indicator in that message.")]

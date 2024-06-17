@@ -8,16 +8,10 @@ using Newtonsoft.Json;
 
 namespace CeresDSP.Services
 {
-    public class FronterStatusService
+    public class FronterStatusService(DiscordClient discord, Configuration config)
     {
-        internal readonly CommonFronterStatusMethods _commonFronterStatus;
-        private readonly PeriodicTimer _timer;
-
-        public FronterStatusService(DiscordClient discord, Configuration config)
-        {
-            _commonFronterStatus = new(discord, config);
-            _timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
-        }
+        internal readonly CommonFronterStatusMethods _commonFronterStatus = new(discord, config);
+        private readonly PeriodicTimer _timer = new(TimeSpan.FromMinutes(10));
 
         public async Task TriggerStatusRefreshAsync()
         {
@@ -26,7 +20,7 @@ namespace CeresDSP.Services
         }
     }
 
-    public class CommonFronterStatusMethods
+    internal class CommonFronterStatusMethods
     {
         private readonly DiscordClient _discord;
         private readonly Dictionary<string, string> _memberIdRelation;
@@ -128,7 +122,7 @@ namespace CeresDSP.Services
                 serializedFronterList.Add(new(_memberIdRelation[fronter.Member], fronter.StartTime, fronter.EndTime));
             }
 
-            List<FrontMemberInfos>[] retArray = { serializedFronterList, serializedCustomFrontList };
+            List<FrontMemberInfos>[] retArray = [serializedFronterList, serializedCustomFrontList];
 
             return retArray;
         }

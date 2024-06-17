@@ -76,14 +76,9 @@ namespace CeresDSP.CommandModules
             await ctx.RespondAsync(embed);
         }
 
-        public class Globals
+        public class Globals(CommandContext context)
         {
-            public readonly CommandContext ctx;
-
-            public Globals(CommandContext context)
-            {
-                ctx = context;
-            }
+            public readonly CommandContext ctx = context;
         }
     }
 }

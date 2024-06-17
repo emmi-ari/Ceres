@@ -205,14 +205,9 @@ namespace CeresDSP.CommandModules
     }
 
     [SlashCommandGroup("Weather", "Weather commands")]
-    public class WeatherCommandsSlash : ApplicationCommandModule
-    {
-        WeatherCommands WeatherCommands { get; init; }
-
-        public WeatherCommandsSlash(Configuration config)
+    public class WeatherCommandsSlash(Configuration config) : ApplicationCommandModule
         {
-            WeatherCommands = new(config);
-        }
+        WeatherCommands WeatherCommands { get; init; } = new(config);
 
         [SlashCommand("Show", "Returns weather of either your default place or a provided place")]
         public async Task Weather(InteractionContext ctx,

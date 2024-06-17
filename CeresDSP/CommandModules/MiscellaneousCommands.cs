@@ -12,16 +12,10 @@ using System.Text.RegularExpressions;
 
 namespace CeresDSP.CommandModules
 {
-    public class MiscellaneousCommands : BaseCommandModule
+    public class MiscellaneousCommands(Configuration config) : BaseCommandModule
     {
-        private readonly Configuration _config;
-        private readonly Random _unsafeRng;
-
-        public MiscellaneousCommands(Configuration config)
-        {
-            _config = config;
-            _unsafeRng = new();
-        }
+        private readonly Configuration _config = config;
+        private readonly Random _unsafeRng = new();
 
         [Command("GreetSunny")]
         public async Task GreetSunny(CommandContext ctx)
@@ -273,14 +267,9 @@ namespace CeresDSP.CommandModules
         }
     }
 
-    public class MiscellaneousCommandsSlash : ApplicationCommandModule
+    public class MiscellaneousCommandsSlash(Configuration config) : ApplicationCommandModule
     {
-        MiscellaneousCommands MiscellaneousCommads { get; init; }
-
-        public MiscellaneousCommandsSlash(Configuration config)
-        {
-            MiscellaneousCommads = new(config);
-        }
+        MiscellaneousCommands MiscellaneousCommads { get; init; } = new(config);
 
         [SlashCommand("AddReaction", "Adds an emote reaction to a message")]
         public async Task AddReaction(InteractionContext ctx,
