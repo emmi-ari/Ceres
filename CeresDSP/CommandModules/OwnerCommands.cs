@@ -14,6 +14,8 @@ namespace CeresDSP.CommandModules
         [Command("eval"), RequireOwner]
         public async Task Eval(CommandContext ctx, [RemainingText] string input)
         {
+            await ctx.Message.CreateReactionAsync(DiscordEmoji.FromUnicode("💬"));
+            await ctx.TriggerTypingAsync();
             Globals globals = new(ctx);
             ScriptOptions scriptOptions = ScriptOptions.Default;
             scriptOptions = scriptOptions.AddImports("System");
@@ -34,18 +36,19 @@ namespace CeresDSP.CommandModules
                     await ctx.RespondAsync(messageFromArray);
                 }
                 else if (evaluation is not null && !evaluation.GetType().IsArray)
-                    await ctx.RespondAsync(evaluation.ToString());
+                    await ctx.RespondAsync(((Task<string>)evaluation).Result);
             }
             catch (Exception ex)
             {
                 await ctx.RespondAsync($"{ex.Message}\n*(0x{ex.HResult:x8})*");
+            }
+            finally
+            {
+                await ctx.Message.DeleteReactionAsync(DiscordEmoji.FromUnicode("💬"), ctx.Client.CurrentUser);
+                await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":white_check_mark:"));
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
             }
-
-            await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":white_check_mark:"));
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
         }
 
         [Command("Info")]
