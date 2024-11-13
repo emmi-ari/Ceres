@@ -36,11 +36,11 @@ namespace CeresDSP
             #region Get Configuration
             try
             {
-                using FileStream configFS = File.OpenRead("config.json");
-                using StreamReader configReader = new(configFS, new UTF8Encoding(true));
+                using FileStream configFs = File.OpenRead("config.json");
+                using StreamReader configReader = new(configFs, new UTF8Encoding(true));
                 Configuration = JsonConvert.DeserializeObject<Configuration>(configReader.ReadToEnd());
             }
-            catch (NullReferenceException)
+            catch (FileNotFoundException)
             {
                 string errorMsg = $"\"config.json\" was not found. Please put it in the current working directory ({Environment.CurrentDirectory})";
                 Console.WriteLine(errorMsg);
