@@ -24,8 +24,9 @@ namespace CeresDSP.CommandModules
             scriptOptions = scriptOptions.AddImports("System.Threading.Tasks");
             try
             {
+                input = !input.EndsWith(';') ? input : input + ';';
                 object evaluation = await CSharpScript.EvaluateAsync(input.Trim('`', '\'', '"'), scriptOptions, globals);
-                
+
                 if (evaluation is not null && evaluation.GetType().IsArray)
                 {
                     string messageFromArray = string.Empty;
