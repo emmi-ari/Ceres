@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis.Scripting;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using DSharpPlus;
 
 namespace CeresDSP.CommandModules
 {
@@ -87,123 +86,38 @@ namespace CeresDSP.CommandModules
         {
             public readonly CommandContext ctx = context;
 
-            public async Task<string> Help(string level = "this")
+            public string Help(string level = "this")
             {
                 StringBuilder methods = new();
-                switch (level.ToUpper())
+                MethodInfo[] methodInfos = level.ToUpper() switch
                 {
-                    case "THIS":
-                    default:
-                        foreach (MethodInfo method in this.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
-                    case "CHANNEL":
-                        foreach (MethodInfo method in ctx.Channel.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
-                    case "CLIENT":
-                        foreach (MethodInfo method in ctx.Client.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
-                    case "GUILD":
-                        foreach (MethodInfo method in ctx.Guild.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
-                    case "MEMBER":
-                        foreach (MethodInfo method in ctx.Member.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
-                    case "MESSAGE":
-                        foreach (MethodInfo method in ctx.Message.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
-                    case "USER":
-                        foreach (MethodInfo method in ctx.User.GetType().GetMethods())
-                        {
-                            if (!method.IsSpecialName && (method.Name != "GetType" &&
-                                method.Name != "ToString" &&
-                                method.Name != "Equals" &&
-                                method.Name != "GetHashCode"))
-                            {
-                                string parameterDescriptions = string.Join(", ", method.GetParameters()
-                                    .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
-                                    .ToArray());
-                                methods.AppendLine($"{method.Name}({parameterDescriptions})");
-                            }
-                        }
-                        break;
+                    "CHANNEL" => ctx.Channel.GetType().GetMethods(),
+                    "CLIENT" => ctx.Client.GetType().GetMethods(),
+                    "GUILD" => ctx.Guild.GetType().GetMethods(),
+                    "MEMBER" => ctx.Member.GetType().GetMethods(),
+                    "MESSAGE" => ctx.Message.GetType().GetMethods(),
+                    "USER" => ctx.User.GetType().GetMethods(),
+                    _ => this.GetType().GetMethods()
+                };
+
+                foreach (MethodInfo method in methodInfos)
+                {
+                    if (!method.IsSpecialName && (method.Name != "GetType" &&
+                        method.Name != "ToString" &&
+                        method.Name != "Equals" &&
+                        method.Name != "GetHashCode"))
+                    {
+                        string parameterDescriptions = string.Join(", ", method.GetParameters()
+                            .Select(parmInfo => parmInfo.ParameterType + " " + parmInfo.Name)
+                            .ToArray());
+                        methods.AppendLine($"{method.Name}({parameterDescriptions})");
+                    }
                 }
+
                 Debug.WriteLine(methods.ToString());
-                if (methods.Length > 2000)
-                    return "todo: message too long for Discord";
-                await ctx.RespondAsync(methods.ToString().Replace('`', '´'));
-                return methods.ToString().Replace('`', '´');
+                return methods.Length > 2000
+                    ? "todo: message too long for Discord"
+                    : methods.ToString().Replace('`', '´');
             }
 
             public async Task<DiscordMember> GetGuildMember(ulong guildId, ulong userId)
