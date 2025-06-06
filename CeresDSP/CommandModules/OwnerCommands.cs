@@ -14,8 +14,13 @@ namespace CeresDSP.CommandModules
         [Command("eval"), RequireOwner]
         public async Task Eval(CommandContext ctx, [RemainingText] string input)
         {
+            input = input.EndsWith(';') ? input : input + ";";
             Globals globals = new(ctx);
             ScriptOptions scriptOptions = ScriptOptions.Default;
+
+#if RELEASE
+            scriptOptions.WithOptimizationLevel(Microsoft.CodeAnalysis.OptimizationLevel.Release);
+#endif
             scriptOptions = scriptOptions.AddImports("System");
             scriptOptions = scriptOptions.AddImports("System.Collections.Generic");
             scriptOptions = scriptOptions.AddImports("System.Diagnostics");
@@ -25,7 +30,7 @@ namespace CeresDSP.CommandModules
             try
             {
                 object evaluation = await CSharpScript.EvaluateAsync(input.Trim('`', '\'', '"'), scriptOptions, globals);
-                
+
                 if (evaluation is not null && evaluation.GetType().IsArray)
                 {
                     string messageFromArray = string.Empty;
@@ -37,7 +42,7 @@ namespace CeresDSP.CommandModules
             }
             catch (Exception ex)
             {
-                await ctx.RespondAsync($"{ex.Message}\n*(0x{ex.HResult:x8})*");
+                await ctx.RespondAsync($"`{ex.Message} (0x{ex.HResult:x8})`");
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
             }
@@ -53,20 +58,19 @@ namespace CeresDSP.CommandModules
             Process process = Process.GetCurrentProcess();
             string authorIcon = (await ctx.Client.GetUserAsync(233018119856062466)).AvatarUrl;
             string commandLine = string.Empty;
-            var cmdArgs = Environment.GetCommandLineArgs().ToList();
-            cmdArgs.ForEach(arg => commandLine += $"{arg} ");
+            Environment.GetCommandLineArgs().ToList()
+                .ForEach(arg => commandLine += $"{arg} ");
             DiscordEmbed embed = new DiscordEmbedBuilder()
             {
-                ImageUrl = ctx.Client.CurrentUser.AvatarUrl,
                 Color = new DiscordColor(45, 122, 185),
                 Author = new() { Name = "Bot by emmi.ari", IconUrl = authorIcon },
                 Title = "Info about Ceres",
-                Description = "My [source code](https://github.com/Nihilopia/Ceres)",
+                Description = "My [source code](https://github.com/emmi-ari/Ceres)",
             }
                 .AddField("Base directory", AppContext.BaseDirectory, false)
                 .AddField("Process Up time", $"{DateTime.Now - process.StartTime}", false)
                 .AddField("Debugger attached", $"{Debugger.IsAttached}", false)
-                .AddField("Command Line", commandLine.Trim(), false)
+                .AddField("Command Line", commandLine.TrimEnd(), false)
                 .AddField("Current threads", $"{process.Threads.Count}", false)
                 .AddField("Memory usage", $"{process.WorkingSet64 / 1024000} MiB", false)
                 .AddField("Guilds", $"{ctx.Client.Guilds.Count}", false)
@@ -74,6 +78,11 @@ namespace CeresDSP.CommandModules
                 .AddField("DSharpPlus version", ctx.Client.VersionString, false)
                 .Build();
             await ctx.RespondAsync(embed);
+        }
+
+        public override string ToString()
+        {
+            return "Woah! Krass geile Liste mit allen Members und deren Typen und so!";
         }
 
         public class Globals(CommandContext context)
