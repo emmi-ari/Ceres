@@ -87,6 +87,11 @@ namespace CeresDSP.CommandModules
             await ctx.RespondAsync(embed);
         }
 
+        [Command("Status")]
+        public async Task Status(CommandContext ctx, [RemainingText] string newStatus)
+            => await ctx.Client.UpdateStatusAsync(new(newStatus));
+        
+
         public override string ToString()
         {
             return "Woah! Krass geile Liste mit allen Members und deren Typen und so!";
