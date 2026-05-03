@@ -28,9 +28,6 @@ namespace CeresDSP
 
         public Configuration Configuration { get; init; }
 
-        public FronterStatusService StatusService { get; init; }
-
-
         public Ceres()
         {
             #region Get Configuration
@@ -66,10 +63,8 @@ namespace CeresDSP
             #endregion
 
             #region Configure Commands
-            StatusService = new(Client, Configuration);
             ServiceCollection services = new();
             ServiceProvider srvProvider = services
-                .AddSingleton(StatusService)
                 .AddSingleton(Configuration)
                 .BuildServiceProvider();
 
@@ -109,7 +104,6 @@ namespace CeresDSP
         public async Task ConnectAsync()
         {
             await Client.ConnectAsync();
-            await StatusService.TriggerStatusRefreshAsync();
         }
 
         private LogLevel GetLogLevel()
