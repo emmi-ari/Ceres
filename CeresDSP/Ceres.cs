@@ -79,7 +79,6 @@ namespace CeresDSP
             };
 
             Commands = Client.UseCommandsNext(cmdConfig);
-            Commands.RegisterCommands<FrontingCommands>();
             Commands.RegisterCommands<WeatherCommands>();
             Commands.RegisterCommands<OwnerCommands>();
             Commands.RegisterCommands<MiscellaneousCommands>();
@@ -88,7 +87,6 @@ namespace CeresDSP
             {
                 Services = srvProvider
             });
-            slashCommands.RegisterCommands<FrontingCommandsSlash>();
             slashCommands.RegisterCommands<WeatherCommandsSlash>();
             slashCommands.RegisterCommands<MiscellaneousCommandsSlash>();
             slashCommands.RegisterCommands<TonalIndicatorCommands>();
@@ -96,7 +94,7 @@ namespace CeresDSP
 
             #region Event Handling
             Client.MessageReactionAdded += ClientEventsHandlerService.OnReactionAdded;
-            Client.MessageCreated += ClientEventsHandlerService.OnMessageCreated;
+            // Client.MessageCreated += ClientEventsHandlerService.OnMessageCreated;
             Client.ThreadCreated += ClientEventsHandlerService.OnThreadCreated;
             #endregion
         }
